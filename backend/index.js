@@ -100,20 +100,14 @@ const ALLOWED_ORIGINS = [
 ];
 
 /**
- * Check whether an origin is a Vercel preview/production URL belonging
- * to the same project.  Accepts:
- *   - https://<project>-<hash>-<scope>.vercel.app   (preview)
- *   - https://<project>.vercel.app                   (production alias)
+ * Check whether an origin is a Vercel preview/production URL.
+ * Accepts any *.vercel.app origin — real security is handled by JWT auth.
  */
-const VERCEL_PROJECT = process.env.VERCEL_PROJECT_NAME || "hair-salon";
 function isVercelOrigin(origin) {
   if (!origin) return false;
   try {
     const { hostname } = new URL(origin);
-    return (
-      hostname.endsWith(".vercel.app") &&
-      hostname.includes(VERCEL_PROJECT)
-    );
+    return hostname.endsWith(".vercel.app");
   } catch {
     return false;
   }
