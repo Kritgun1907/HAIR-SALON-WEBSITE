@@ -11,20 +11,20 @@ const contactDetails = [
   {
     icon: MapPin,
     label: "Address",
-    value: "123 MG Road, Bengaluru, Karnataka 560001",
+    value: "Near: Sunrise Motel, Sirhind Road Patial, Punjab 147004",
     href: "https://maps.google.com/?q=123+MG+Road+Bengaluru",
   },
   {
     icon: Phone,
     label: "Phone",
-    value: "+91 98765 43210",
-    href: "tel:+919876543210",
+    value: "+91 98148 30550",
+    href: "tel:+919814830550",
   },
   {
     icon: Mail,
     label: "Email",
-    value: "hello@theexperts.in",
-    href: "mailto:hello@theexperts.in",
+    value: "theexpertssalon@gmail.com",
+    href: "mailto:theexpertssalon@gmail.com",
   },
   {
     icon: Instagram,
@@ -35,9 +35,9 @@ const contactDetails = [
 ];
 
 const hours = [
-  { day: "Monday – Friday", time: "10:00 AM – 8:00 PM" },
-  { day: "Saturday", time: "9:00 AM – 9:00 PM" },
-  { day: "Sunday", time: "10:00 AM – 6:00 PM" },
+  { day: "Monday – Friday", time: "09:00 AM – 09:00 PM" },
+  { day: "Saturday", time: "09:00 AM – 09:00 PM" },
+  { day: "Sunday", time: "10:00 AM – 06:00 PM" },
 ];
 
 const fadeUp = {
