@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
     passwordHash: { type: String, required: true },
     role: {
       type: String,
-      enum: ["receptionist", "manager", "owner"],
+      enum: ["receptionist", "manager", "owner", "artist"],
       required: true,
     },
     createdBy: {

@@ -53,6 +53,9 @@ export interface ApiFormData {
   services: ServiceItem[];
 }
 
+// ─── Payment mode ──────────────────────────────────────────────────────────
+export type PaymentMode = "online" | "cash" | "partial";
+
 // ─── Form state types ─────────────────────────────────────────────────────────
 
 export interface VisitFormData {
@@ -68,6 +71,8 @@ export interface VisitFormData {
   searchService: string[];
   discount: string;
   date: string;
+  paymentMode: PaymentMode;
+  cashAmount: string;
 }
 
 export interface VisitFormErrors {
@@ -81,4 +86,5 @@ export interface VisitFormErrors {
   endTime?: string;
   artist?: string;
   serviceType?: string;
+  cashAmount?: string;
 }

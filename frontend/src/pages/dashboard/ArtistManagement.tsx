@@ -9,7 +9,8 @@
  *   - Deactivate / reactivate (soft delete)
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Palette,
@@ -21,6 +22,13 @@ import {
   Loader2,
   Phone,
   Trash2,
+  Mail,
+  BadgePercent,
+  Camera,
+  Key,
+  Briefcase,
+  Eye,
+  Upload,
 } from "lucide-react";
 
 const API = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -30,6 +38,11 @@ interface ArtistRecord {
   _id: string;
   name: string;
   phone: string;
+  email: string | null;
+  registrationId: string | null;
+  commission: number;
+  photo: string | null;
+  userId: string | null;
   isActive: boolean;
   createdAt: string;
 }
@@ -37,6 +50,11 @@ interface ArtistRecord {
 interface ArtistFormData {
   name: string;
   phone: string;
+  email: string;
+  password: string;
+  registrationId: string;
+  commission: string;
+  photo: string;
 }
 
 // ── Field styling (matches TeamManagement) ───────────────────────────────────
@@ -45,6 +63,14 @@ const inputClass =
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function ArtistManagement() {
+  const navigate = useNavigate();
+  const addPhotoInputRef = useRef<HTMLInputElement>(null);
+  const editPhotoInputRef = useRef<HTMLInputElement>(null);
+  const [addPhotoPreview, setAddPhotoPreview] = useState<string | null>(null);
+  const [addPhotoFile, setAddPhotoFile] = useState<File | null>(null);
+  const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
+  const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [artists, setArtists] = useState<ArtistRecord[]>([]);
   const [loadingArtists, setLoadingArtists] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -54,6 +80,11 @@ export default function ArtistManagement() {
   const [formData, setFormData] = useState<ArtistFormData>({
     name: "",
     phone: "",
+    email: "",
+    password: "",
+    registrationId: "",
+    commission: "",
+    photo: "",
   });
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
@@ -64,6 +95,11 @@ export default function ArtistManagement() {
   const [editForm, setEditForm] = useState<ArtistFormData>({
     name: "",
     phone: "",
+    email: "",
+    password: "",
+    registrationId: "",
+    commission: "",
+    photo: "",
   });
   const [editFormError, setEditFormError] = useState("");
 
@@ -92,8 +128,18 @@ export default function ArtistManagement() {
   // Sync edit form when editingArtist changes
   useEffect(() => {
     if (editingArtist) {
-      setEditForm({ name: editingArtist.name, phone: editingArtist.phone });
+      setEditForm({
+        name: editingArtist.name,
+        phone: editingArtist.phone,
+        email: editingArtist.email || "",
+        password: "",
+        registrationId: editingArtist.registrationId || "",
+        commission: editingArtist.commission?.toString() || "0",
+        photo: editingArtist.photo || "",
+      });
       setEditFormError("");
+      setEditPhotoFile(null);
+      setEditPhotoPreview(null);
     }
   }, [editingArtist]);
 
@@ -124,8 +170,14 @@ export default function ArtistManagement() {
       });
       const data = await res.json();
       if (res.ok) {
+        // Upload photo file if selected
+        if (addPhotoFile) {
+          await uploadPhotoFile(data._id, addPhotoFile);
+        }
         setFormSuccess(`${data.name} has been added successfully.`);
-        setFormData({ name: "", phone: "" });
+        setFormData({ name: "", phone: "", email: "", password: "", registrationId: "", commission: "", photo: "" });
+        setAddPhotoFile(null);
+        setAddPhotoPreview(null);
         fetchArtists();
         setTimeout(() => {
           setShowAddPanel(false);
@@ -199,12 +251,24 @@ export default function ArtistManagement() {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({
+          name: editForm.name,
+          phone: editForm.phone,
+          registrationId: editForm.registrationId || null,
+          commission: editForm.commission ? Number(editForm.commission) : 0,
+          photo: editForm.photo || null,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
+        // Upload photo file if selected
+        if (editPhotoFile) {
+          await uploadPhotoFile(editingArtist._id, editPhotoFile);
+        }
         fetchArtists();
         setEditingArtist(null);
+        setEditPhotoFile(null);
+        setEditPhotoPreview(null);
       } else {
         setEditFormError(
           data.errors?.[0]?.msg || data.error || "Failed to update artist."
@@ -213,6 +277,50 @@ export default function ArtistManagement() {
     } catch {
       setEditFormError("Network error. Check your connection.");
     }
+  };
+
+  // ── Photo upload helper ─────────────────────────────────────────────────────
+  const uploadPhotoFile = async (artistId: string, file: File) => {
+    setUploadingPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append("photo", file);
+      await fetch(`${API}/api/artists/${artistId}/photo`, {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+      });
+    } catch {
+      // silently fail; photo URL fallback still works
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  // ── Handle file selection for Add form ─────────────────────────────────────
+  const handleAddPhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAddPhotoFile(file);
+    setAddPhotoPreview(URL.createObjectURL(file));
+    // Clear the text URL when a file is selected
+    setFormData((p) => ({ ...p, photo: "" }));
+  };
+
+  // ── Handle file selection for Edit form ────────────────────────────────────
+  const handleEditPhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEditPhotoFile(file);
+    setEditPhotoPreview(URL.createObjectURL(file));
+    setEditForm((p) => ({ ...p, photo: "" }));
+  };
+
+  // ── Resolve photo URL (local uploads vs external URLs) ─────────────────────
+  const resolvePhotoUrl = (photo: string | null): string | null => {
+    if (!photo) return null;
+    if (photo.startsWith("http")) return photo;
+    return `${API}${photo}`;
   };
 
   // ── Stats ──────────────────────────────────────────────────────────────────
@@ -227,7 +335,7 @@ export default function ArtistManagement() {
       transition={{ duration: 0.4 }}
     >
       {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
           <h2 className="text-2xl font-bold text-stone-900 flex items-center gap-2">
             <Palette className="w-6 h-6 text-amber-500" /> Artist Directory
@@ -238,7 +346,7 @@ export default function ArtistManagement() {
         </div>
         <button
           onClick={() => setShowAddPanel((p) => !p)}
-          className="flex items-center gap-2 bg-stone-900 text-white text-sm rounded-xl px-5 py-2.5 hover:bg-stone-800 transition-colors"
+          className="relative z-10 flex items-center gap-2 bg-stone-900 text-white text-sm rounded-xl px-5 py-2.5 hover:bg-stone-800 active:scale-95 transition-all w-full sm:w-auto justify-center sm:justify-start"
         >
           <UserPlus className="w-4 h-4" />
           Add New Artist
@@ -296,7 +404,7 @@ export default function ArtistManagement() {
               {/* Full Name */}
               <div>
                 <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
-                  Full Name
+                  Full Name *
                 </label>
                 <input
                   type="text"
@@ -312,7 +420,7 @@ export default function ArtistManagement() {
               {/* Phone */}
               <div>
                 <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
-                  Phone Number
+                  Phone Number *
                 </label>
                 <input
                   type="tel"
@@ -328,6 +436,120 @@ export default function ArtistManagement() {
                   }
                   className={inputClass}
                 />
+              </div>
+
+              {/* Email (for dashboard login) */}
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
+                  <Mail className="w-3 h-3 inline mr-1" /> Email
+                  <span className="text-stone-400 font-normal ml-1">(for dashboard login)</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="artist@theexperts.in"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, email: e.target.value }))
+                  }
+                  className={inputClass}
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
+                  <Key className="w-3 h-3 inline mr-1" /> Password
+                  <span className="text-stone-400 font-normal ml-1">(min 8 chars)</span>
+                </label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, password: e.target.value }))
+                  }
+                  className={inputClass}
+                />
+              </div>
+
+              {/* Registration ID */}
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
+                  <Briefcase className="w-3 h-3 inline mr-1" /> Registration ID
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. REG-001"
+                  value={formData.registrationId}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, registrationId: e.target.value }))
+                  }
+                  className={inputClass}
+                />
+              </div>
+
+              {/* Commission % */}
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
+                  <BadgePercent className="w-3 h-3 inline mr-1" /> Commission (%)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  placeholder="e.g. 30"
+                  value={formData.commission}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, commission: e.target.value }))
+                  }
+                  className={inputClass}
+                />
+              </div>
+
+              {/* Photo Upload / URL */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
+                  <Camera className="w-3 h-3 inline mr-1" /> Artist Photo
+                </label>
+                <div className="flex items-center gap-4">
+                  {/* File upload */}
+                  <input
+                    ref={addPhotoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={handleAddPhotoFileChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addPhotoInputRef.current?.click()}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-stone-600 text-sm hover:bg-stone-100 hover:border-stone-300 transition-all"
+                  >
+                    <Upload className="w-4 h-4" />
+                    {addPhotoFile ? addPhotoFile.name : "Upload from system"}
+                  </button>
+                  <span className="text-xs text-stone-400">or</span>
+                  <input
+                    type="text"
+                    placeholder="Paste URL https://..."
+                    value={formData.photo}
+                    onChange={(e) => {
+                      setFormData((p) => ({ ...p, photo: e.target.value }));
+                      setAddPhotoFile(null);
+                      setAddPhotoPreview(null);
+                    }}
+                    className={`${inputClass} flex-1`}
+                  />
+                  {/* Preview */}
+                  {(addPhotoPreview || formData.photo) && (
+                    <img
+                      src={addPhotoPreview || formData.photo}
+                      alt="Preview"
+                      className="w-11 h-11 rounded-lg object-cover border border-stone-200"
+                    />
+                  )}
+                </div>
               </div>
 
               {/* Error / Success */}
@@ -363,12 +585,12 @@ export default function ArtistManagement() {
                   disabled={submitting}
                   className="flex items-center gap-2 bg-stone-900 text-white text-sm rounded-xl px-6 py-2.5 hover:bg-stone-800 disabled:opacity-60 transition-colors"
                 >
-                  {submitting ? (
+                  {submitting || uploadingPhoto ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <UserPlus className="w-4 h-4" />
                   )}
-                  {submitting ? "Adding..." : "Add Artist"}
+                  {submitting ? "Adding..." : uploadingPhoto ? "Uploading..." : "Add Artist"}
                 </button>
               </div>
             </div>
@@ -377,8 +599,8 @@ export default function ArtistManagement() {
       </AnimatePresence>
 
       {/* ── Artists Table ── */}
-      <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm overflow-x-auto">
+        <table className="w-full text-sm min-w-[700px]">
           <thead className="bg-stone-50 border-b border-stone-200">
             <tr>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
@@ -388,10 +610,13 @@ export default function ArtistManagement() {
                 Phone
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
+                Commission
+              </th>
+              <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Status
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Date Added
+                Login
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Actions
@@ -402,7 +627,7 @@ export default function ArtistManagement() {
             {loadingArtists
               ? Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-b border-stone-100">
-                    {[1, 2, 3, 4, 5].map((j) => (
+                    {[1, 2, 3, 4, 5, 6].map((j) => (
                       <td key={j} className="px-6 py-4">
                         <div className="h-4 bg-stone-100 rounded animate-pulse" />
                       </td>
@@ -413,7 +638,7 @@ export default function ArtistManagement() {
                 ? (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="px-6 py-16 text-center text-stone-400 text-sm"
                       >
                         No artists yet. Add your first artist above.
@@ -427,7 +652,20 @@ export default function ArtistManagement() {
                     >
                       {/* Name */}
                       <td className="px-6 py-4">
-                        <p className="font-medium text-stone-900">{a.name}</p>
+                        <div className="flex items-center gap-3">
+                          {a.photo ? (
+                            <img
+                              src={resolvePhotoUrl(a.photo)!}
+                              alt={a.name}
+                              className="w-8 h-8 rounded-full object-cover border border-stone-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center uppercase shrink-0">
+                              {a.name.charAt(0)}
+                            </div>
+                          )}
+                          <p className="font-medium text-stone-900">{a.name}</p>
+                        </div>
                       </td>
 
                       {/* Phone */}
@@ -435,6 +673,13 @@ export default function ArtistManagement() {
                         <span className="inline-flex items-center gap-1.5 text-stone-600">
                           <Phone className="w-3.5 h-3.5 text-stone-400" />
                           {a.phone}
+                        </span>
+                      </td>
+
+                      {/* Commission */}
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          {a.commission || 0}%
                         </span>
                       </td>
 
@@ -453,18 +698,28 @@ export default function ArtistManagement() {
                         )}
                       </td>
 
-                      {/* Date */}
-                      <td className="px-6 py-4 text-stone-500">
-                        {new Date(a.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                      {/* Login enabled */}
+                      <td className="px-6 py-4">
+                        {a.userId ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            ✓ Enabled
+                          </span>
+                        ) : (
+                          <span className="text-xs text-stone-400">—</span>
+                        )}
                       </td>
 
                       {/* Actions */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => navigate(`/dashboard/owner/artist-view/${a._id}`)}
+                            className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-300 rounded-lg px-3 py-1.5 transition-all"
+                            title="View artist dashboard"
+                          >
+                            <Eye className="w-3 h-3" /> Dashboard
+                          </button>
+
                           <button
                             onClick={() => setEditingArtist(a)}
                             className="flex items-center gap-1.5 text-xs text-stone-600 hover:text-stone-900 border border-stone-200 hover:border-stone-300 rounded-lg px-3 py-1.5 transition-all"
@@ -506,13 +761,13 @@ export default function ArtistManagement() {
       {/* ── Edit Artist Modal ── */}
       <AnimatePresence>
         {editingArtist && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-7"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-7 my-auto"
             >
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
@@ -559,6 +814,79 @@ export default function ArtistManagement() {
                     }
                     className={inputClass}
                   />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
+                      Registration ID
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. REG-001"
+                      value={editForm.registrationId}
+                      onChange={(e) =>
+                        setEditForm((p) => ({ ...p, registrationId: e.target.value }))
+                      }
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
+                      Commission (%)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={editForm.commission}
+                      onChange={(e) =>
+                        setEditForm((p) => ({ ...p, commission: e.target.value }))
+                      }
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
+                    Artist Photo
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      ref={editPhotoInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      onChange={handleEditPhotoFileChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => editPhotoInputRef.current?.click()}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-600 text-sm hover:bg-stone-100 hover:border-stone-300 transition-all"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {editPhotoFile ? editPhotoFile.name : "Upload"}
+                    </button>
+                    <span className="text-xs text-stone-400">or</span>
+                    <input
+                      type="text"
+                      placeholder="Paste URL https://..."
+                      value={editForm.photo}
+                      onChange={(e) => {
+                        setEditForm((p) => ({ ...p, photo: e.target.value }));
+                        setEditPhotoFile(null);
+                        setEditPhotoPreview(null);
+                      }}
+                      className={`${inputClass} flex-1`}
+                    />
+                    {(editPhotoPreview || resolvePhotoUrl(editingArtist?.photo ?? null) || editForm.photo) && (
+                      <img
+                        src={editPhotoPreview || editForm.photo || resolvePhotoUrl(editingArtist?.photo ?? null)!}
+                        alt="Preview"
+                        className="w-11 h-11 rounded-lg object-cover border border-stone-200"
+                      />
+                    )}
+                  </div>
                 </div>
 
                 {editFormError && (

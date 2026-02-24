@@ -29,6 +29,7 @@ import UnauthorizedPage from './pages/UnauthorizedPage'
 import VisitEntryPage from './pages/VisitEntryPage'
 import ManagerDashboard from './pages/ManagerDashboard'
 import OwnerDashboard from './pages/OwnerDashboard'
+import ArtistDashboard from './pages/ArtistDashboard'
 import AboutPage from './pages/AboutPage'
 import ContactPage from './pages/ContactPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
@@ -75,6 +76,16 @@ createRoot(document.getElementById('root')!).render(
             element={
               <ProtectedRoute allowedRoles={["owner"]}>
                 <OwnerDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ── Artist dashboard ── */}
+          <Route
+            path="/dashboard/artist"
+            element={
+              <ProtectedRoute allowedRoles={["artist"]}>
+                <ArtistDashboard />
               </ProtectedRoute>
             }
           />

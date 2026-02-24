@@ -36,6 +36,8 @@ const EMPTY_FORM: VisitFormData = {
   searchService: [],
   discount: "",
   date: today,
+  paymentMode: "online",
+  cashAmount: "",
 };
 
 export function useVisitForm() {
@@ -94,6 +96,17 @@ export function useVisitForm() {
   /** Final amount payable after discount. */
   const payable = Math.max(0, subtotal - discountAmt);
 
+  // ── Partial-payment derived values ────────────────────────────────────────
+  /** Cash amount entered by receptionist (only meaningful for partial mode). */
+  const cashAmountNum = Math.max(0, Math.round((Number(formData.cashAmount) || 0) * 100) / 100);
+
+  /** Amount that must be paid online (Razorpay) after subtracting cash. */
+  const onlinePayable = formData.paymentMode === "partial"
+    ? Math.max(0, payable - cashAmountNum)
+    : formData.paymentMode === "cash"
+      ? 0
+      : payable;
+
   // Keep formData.amount in sync so the rest of the flow sees it
   useEffect(() => {
     setFormData((prev) => {
@@ -118,6 +131,15 @@ export function useVisitForm() {
     if (!formData.artist) e.artist = "Artist is required";
     if (subtotal <= 0) e.amount = "Select at least one service";
     else if (payable <= 0) e.amount = "Payable amount must be greater than ₹0";
+
+    // Partial-payment validation
+    if (formData.paymentMode === "partial") {
+      if (cashAmountNum <= 0) e.cashAmount = "Cash amount must be greater than ₹0";
+      else if (cashAmountNum >= payable)
+        e.cashAmount = `Cash amount must be less than ₹${payable.toLocaleString("en-IN")}`;
+      else if (payable - cashAmountNum < 1)
+        e.cashAmount = `Online portion must be at least ₹1 (max cash: ₹${(payable - 1).toLocaleString("en-IN")})`;
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -158,15 +180,87 @@ export function useVisitForm() {
     setIsLoading(true);
     setPaymentError(null);
 
+    // Resolve artist name for the visit record
+    const selectedArtist = dropdownData.artists.find(
+      (a) => a.id === formData.artist,
+    );
+    const artistName = selectedArtist?.name ?? formData.artist;
+    const serviceTypeStr =
+      formData.serviceType.length > 0
+        ? formData.serviceType.join(", ")
+        : undefined;
+
+    // ── Helper: create visit record ─────────────────────────────────────
+    const persistVisit = async (opts: {
+      paymentMethod: "online" | "cash" | "partial";
+      razorpayPaymentId?: string;
+      cashAmount?: number;
+      onlineAmount?: number;
+    }) => {
+      await createVisit({
+        name: formData.name.trim(),
+        contact: formData.phone.trim(),
+        age: formData.age,
+        gender: formData.gender,
+        date: formData.date,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        artist: artistName,
+        serviceType: serviceTypeStr,
+        serviceIds: formData.searchService,
+        discountPercent: discountPct,
+        paymentMethod: opts.paymentMethod,
+        razorpayPaymentId: opts.razorpayPaymentId,
+        cashAmount: opts.cashAmount,
+        onlineAmount: opts.onlineAmount,
+      });
+    };
+
     try {
+      // ═══════════════════════════════════════════════════════════════════
+      // FLOW 1: Full Cash — no Razorpay involved
+      // ═══════════════════════════════════════════════════════════════════
+      if (formData.paymentMode === "cash") {
+        let visitRecordFailed = false;
+        try {
+          await persistVisit({
+            paymentMethod: "cash",
+            cashAmount: payable,
+            onlineAmount: 0,
+          });
+        } catch {
+          console.error("Visit record creation failed (cash flow)");
+          visitRecordFailed = true;
+        }
+
+        const params = new URLSearchParams({
+          payment_id: "CASH",
+          amount: String(payable),
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
+          method: "cash",
+        });
+        if (visitRecordFailed) params.set("visit_warning", "true");
+        navigate(`/payment-status?${params}`);
+        return;
+      }
+
+      // ═══════════════════════════════════════════════════════════════════
+      // FLOW 2 & 3: Full Online or Partial — Razorpay checkout required
+      // ═══════════════════════════════════════════════════════════════════
       const loaded = await loadRazorpayScript();
       if (!loaded)
         throw new Error("Failed to load Razorpay SDK. Check your connection.");
 
+      // Amount to charge online
+      const chargeOnline = formData.paymentMode === "partial"
+        ? onlinePayable
+        : payable;
+
       const order = await createOrder({
         name: formData.name.trim(),
         phone: formData.phone.trim(),
-        amount: payable,
+        amount: chargeOnline,
       });
 
       const rzp = new window.Razorpay({
@@ -174,7 +268,10 @@ export function useVisitForm() {
         amount: order.amount,
         currency: order.currency,
         name: "Hair Salon",
-        description: "Visit Payment",
+        description:
+          formData.paymentMode === "partial"
+            ? `Partial Online Payment (Cash: ₹${cashAmountNum.toLocaleString("en-IN")})`
+            : "Visit Payment",
         order_id: order.order_id,
         prefill: {
           name: formData.name.trim(),
@@ -198,34 +295,15 @@ export function useVisitForm() {
           });
 
           if (result.success) {
-            // Persist the visit in the database
             let visitRecordFailed = false;
             try {
-              // Resolve artist ID → name (Visit model stores the display name,
-              // which analytics uses for leaderboard / deep-dive grouping)
-              const selectedArtist = dropdownData.artists.find(
-                (a) => a.id === formData.artist,
-              );
-
-              await createVisit({
-                name: formData.name.trim(),
-                contact: formData.phone.trim(),
-                age: formData.age,
-                gender: formData.gender,
-                date: formData.date,
-                startTime: formData.startTime,
-                endTime: formData.endTime,
-                artist: selectedArtist?.name ?? formData.artist,
-                serviceType:
-                  formData.serviceType.length > 0
-                    ? formData.serviceType.join(", ")
-                    : undefined,
-                serviceIds: formData.searchService,
-                discountPercent: discountPct,
+              await persistVisit({
+                paymentMethod: formData.paymentMode === "partial" ? "partial" : "online",
                 razorpayPaymentId: result.payment_id,
+                cashAmount: formData.paymentMode === "partial" ? cashAmountNum : 0,
+                onlineAmount: chargeOnline,
               });
             } catch {
-              // Visit creation failed but payment succeeded — flag it
               console.error("Visit record creation failed after payment");
               visitRecordFailed = true;
             }
@@ -235,7 +313,12 @@ export function useVisitForm() {
               amount: String(result.amount),
               name: result.name,
               phone: result.phone,
+              method: formData.paymentMode === "partial" ? "partial" : "online",
             });
+            if (formData.paymentMode === "partial") {
+              params.set("cash_amount", String(cashAmountNum));
+              params.set("total_amount", String(payable));
+            }
             if (visitRecordFailed) {
               params.set("visit_warning", "true");
             }
@@ -271,6 +354,8 @@ export function useVisitForm() {
     discountPct,
     discountAmt,
     payable,
+    cashAmountNum,
+    onlinePayable,
     handleChange,
     handleSelect,
     handleMultiSelect,

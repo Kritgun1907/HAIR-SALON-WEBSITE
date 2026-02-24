@@ -23,6 +23,8 @@ import {
   Hash,
   CalendarCheck,
   AlertTriangle,
+  Banknote,
+  CreditCard,
 } from "lucide-react";
 import { SparklesCore } from "@/components/ui/sparkles";
 
@@ -35,6 +37,9 @@ interface PaymentDetails {
   phone: string;
   status: string;
   error?: string;
+  method?: "online" | "cash" | "partial";
+  cashAmount?: number;
+  totalAmount?: number;
 }
 
 type VerifyState = "loading" | "success" | "failed" | "invalid";
@@ -45,11 +50,12 @@ export default function PaymentStatus() {
   const [details, setDetails] = useState<PaymentDetails | null>(null);
 
   useEffect(() => {
-    // ── Flow A: Razorpay Order (embedded checkout) ──────────────────────────
+    // ── Flow A: Razorpay Order (embedded checkout) or Cash / Partial ────────
     const paymentId = searchParams.get("payment_id");
     const amount    = searchParams.get("amount");
     const name      = searchParams.get("name");
     const phone     = searchParams.get("phone");
+    const method    = searchParams.get("method"); // "cash" | "partial" | "online" | null
 
     if (paymentId && amount) {
       setDetails({
@@ -59,7 +65,10 @@ export default function PaymentStatus() {
         currency: "INR",
         name: name ?? "",
         phone: phone ?? "",
-        status: "captured",
+        status: method === "cash" ? "cash" : "captured",
+        method: (method as "cash" | "partial" | "online") ?? "online",
+        cashAmount: Number(searchParams.get("cash_amount") || 0),
+        totalAmount: Number(searchParams.get("total_amount") || amount),
       });
       setState("success");
       return;
@@ -181,7 +190,11 @@ export default function PaymentStatus() {
                     transition={{ delay: 0.2 }}
                     className="text-2xl font-bold text-stone-900 mb-1"
                   >
-                    Payment Successful!
+                    {details.method === "cash"
+                      ? "Cash Payment Recorded!"
+                      : details.method === "partial"
+                        ? "Split Payment Successful!"
+                        : "Payment Successful!"}
                   </motion.h2>
                   <motion.p
                     initial={{ opacity: 0 }}
@@ -189,7 +202,11 @@ export default function PaymentStatus() {
                     transition={{ delay: 0.3 }}
                     className="text-stone-500 text-sm"
                   >
-                    Your visit payment is confirmed. See you soon!
+                    {details.method === "cash"
+                      ? "The full amount was collected in cash. See you soon!"
+                      : details.method === "partial"
+                        ? "Part paid in cash, remainder paid online. See you soon!"
+                        : "Your visit payment is confirmed. See you soon!"}
                   </motion.p>
                 </div>
 
@@ -200,12 +217,42 @@ export default function PaymentStatus() {
                   transition={{ delay: 0.35 }}
                   className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-center"
                 >
-                  <p className="text-xs text-stone-500 mb-1 uppercase tracking-widest">
-                    Amount Paid
-                  </p>
-                  <p className="text-4xl font-bold text-emerald-600">
-                    ₹{details.amount.toLocaleString("en-IN")}
-                  </p>
+                  {details.method === "partial" ? (
+                    <>
+                      <p className="text-xs text-stone-500 mb-1 uppercase tracking-widest">
+                        Total Amount
+                      </p>
+                      <p className="text-3xl font-bold text-emerald-600 mb-3">
+                        ₹{Number(details.totalAmount ?? details.amount).toLocaleString("en-IN")}
+                      </p>
+                      <div className="flex items-center justify-center gap-4 text-sm">
+                        <span className="flex items-center gap-1.5 text-emerald-700">
+                          <Banknote className="w-4 h-4" />
+                          Cash: ₹{(details.cashAmount ?? 0).toLocaleString("en-IN")}
+                        </span>
+                        <span className="text-stone-300">|</span>
+                        <span className="flex items-center gap-1.5 text-blue-600">
+                          <CreditCard className="w-4 h-4" />
+                          Online: ₹{details.amount.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs text-stone-500 mb-1 uppercase tracking-widest">
+                        {details.method === "cash" ? "Cash Collected" : "Amount Paid"}
+                      </p>
+                      <p className="text-4xl font-bold text-emerald-600">
+                        ₹{details.amount.toLocaleString("en-IN")}
+                      </p>
+                      {details.method === "cash" && (
+                        <div className="flex items-center justify-center gap-1.5 mt-2 text-sm text-emerald-700">
+                          <Banknote className="w-4 h-4" />
+                          Paid in cash at counter
+                        </div>
+                      )}
+                    </>
+                  )}
                 </motion.div>
 
                 {/* Details */}
@@ -217,11 +264,24 @@ export default function PaymentStatus() {
                 >
                   <DetailRow icon={<User className="w-4 h-4" />} label="Customer" value={details.name} />
                   <DetailRow icon={<Phone className="w-4 h-4" />} label="Mobile" value={`+91 ${details.phone}`} />
-                  <DetailRow icon={<Hash className="w-4 h-4" />} label="Payment ID" value={details.payment_id} mono />
+                  {details.method !== "cash" && (
+                    <DetailRow icon={<Hash className="w-4 h-4" />} label="Payment ID" value={details.payment_id} mono />
+                  )}
                   <DetailRow
                     icon={<CalendarCheck className="w-4 h-4" />}
                     label="Date"
                     value={new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                  />
+                  <DetailRow
+                    icon={details.method === "cash" ? <Banknote className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
+                    label="Method"
+                    value={
+                      details.method === "cash"
+                        ? "Cash"
+                        : details.method === "partial"
+                          ? "Split (Cash + Online)"
+                          : "Online (Razorpay)"
+                    }
                   />
                 </motion.div>
 
