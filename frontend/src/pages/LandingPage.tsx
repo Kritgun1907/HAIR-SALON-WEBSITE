@@ -597,23 +597,23 @@ function SiteFooter() {
             <div className="flex flex-col gap-2.5 text-sm text-white/45 font-light">
               <p>
                 <span className="text-white/25 text-xs uppercase tracking-widest block mb-0.5">Address</span>
-                123 MG Road, Bengaluru, Karnataka 560001
+                Near: Sunrise Motel, Sirhind Road Patial, Punjab 147004
               </p>
               <p>
                 <span className="text-white/25 text-xs uppercase tracking-widest block mb-0.5">Phone</span>
-                <a href="tel:+919876543210" className="hover:text-amber-400 transition-colors duration-150">
-                  +91 98765 43210
+                <a href="tel:+919814830550" className="hover:text-amber-400 transition-colors duration-150">
+                  +91 98148 30550
                 </a>
               </p>
               <p>
                 <span className="text-white/25 text-xs uppercase tracking-widest block mb-0.5">Email</span>
-                <a href="mailto:hello@theexperts.in" className="hover:text-amber-400 transition-colors duration-150">
-                  hello@theexperts.in
+                <a href="mailto:theexpertssalon@gmail.com" className="hover:text-amber-400 transition-colors duration-150">
+                  theexpertssalon@gmail.com
                 </a>
               </p>
               <p>
                 <span className="text-white/25 text-xs uppercase tracking-widest block mb-0.5">Hours</span>
-                Mon – Sat · 10:00 AM – 8:00 PM
+                Mon – Sat · 09:00 AM – 09:00 PM
               </p>
             </div>
           </div>
