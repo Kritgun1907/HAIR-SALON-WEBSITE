@@ -240,20 +240,20 @@ export default function PrivacyPolicyPage() {
             <li>
               <strong className="text-stone-600">The Experts Hair Salon</strong>
             </li>
-            <li>123 MG Road, Bengaluru, Karnataka 560001</li>
+            <li> Near: Sunrise Motel, Sirhind Road Patial, Punjab 147004</li>
             <li>
               Phone:{" "}
-              <a href="tel:+919876543210" className="text-amber-600 hover:underline font-medium">
-                +91 98765 43210
+              <a href="tel:+919814830550" className="text-amber-600 hover:underline font-medium">
+                +91 98148 30550
               </a>
             </li>
             <li>
               Email:{" "}
               <a
-                href="mailto:hello@theexperts.in"
+                href="mailto: theexpertssalon@gmail.com"
                 className="text-amber-600 hover:underline font-medium"
               >
-                hello@theexperts.in
+                theexpertssalon@gmail.com
               </a>
             </li>
           </ul>
