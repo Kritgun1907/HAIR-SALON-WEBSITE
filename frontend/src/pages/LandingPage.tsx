@@ -626,14 +626,17 @@ function SiteFooter() {
             © {new Date().getFullYear()} The Experts Hair Salon · All rights reserved
           </p>
           <div className="flex items-center gap-5">
-            {["Privacy Policy", "Terms of Service"].map((label) => (
-              <a
+            {[
+              { label: "Privacy Policy", to: "/privacy-policy" },
+              { label: "Terms of Service", to: "/terms-of-service" },
+            ].map(({ label, to }) => (
+              <Link
                 key={label}
-                href="#"
+                to={to}
                 className="text-[11px] text-white/25 hover:text-white/50 transition-colors duration-150 tracking-wide"
               >
                 {label}
-              </a>
+              </Link>
             ))}
           </div>
         </div>
