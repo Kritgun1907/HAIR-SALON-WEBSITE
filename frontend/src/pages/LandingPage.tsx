@@ -613,7 +613,6 @@ function SiteFooter() {
               </p>
               <p>
                 <span className="text-white/25 text-xs uppercase tracking-widest block mb-0.5">Email</span>
-                <a href="theexpertssalon@gmail.com" className="hover:text-amber-400 transition-colors duration-150">
                 <a href="mailto:theexpertssalon@gmail.com" className="hover:text-amber-400 transition-colors duration-150">
                   theexpertssalon@gmail.com
                 </a>
