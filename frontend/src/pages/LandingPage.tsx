@@ -597,6 +597,11 @@ function SiteFooter() {
             <div className="flex flex-col gap-2.5 text-sm text-white/45 font-light">
               <p>
                 <span className="text-white/25 text-xs uppercase tracking-widest block mb-0.5">Address</span>
+                Near Sunrise Motel, Sirhind Road Patiala, Punjab 147004
+              </p>
+              <p>
+                <span className="text-white/25 text-xs uppercase tracking-widest block mb-0.5">Phone</span>
+                <a href="tel:+919876543210" className="hover:text-amber-400 transition-colors duration-150">
                 Near: Sunrise Motel, Sirhind Road Patial, Punjab 147004
               </p>
               <p>
@@ -607,6 +612,7 @@ function SiteFooter() {
               </p>
               <p>
                 <span className="text-white/25 text-xs uppercase tracking-widest block mb-0.5">Email</span>
+                <a href="theexpertssalon@gmail.com" className="hover:text-amber-400 transition-colors duration-150">
                 <a href="mailto:theexpertssalon@gmail.com" className="hover:text-amber-400 transition-colors duration-150">
                   theexpertssalon@gmail.com
                 </a>
