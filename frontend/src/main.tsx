@@ -31,6 +31,8 @@ import ManagerDashboard from './pages/ManagerDashboard'
 import OwnerDashboard from './pages/OwnerDashboard'
 import AboutPage from './pages/AboutPage'
 import ContactPage from './pages/ContactPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
+import TermsOfServicePage from './pages/TermsOfServicePage'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -44,6 +46,8 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
 
           {/* ── Visit Entry: receptionist + manager + owner ── */}
           <Route

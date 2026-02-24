@@ -602,12 +602,18 @@ function SiteFooter() {
               <p>
                 <span className="text-white/25 text-xs uppercase tracking-widest block mb-0.5">Phone</span>
                 <a href="tel:+919876543210" className="hover:text-amber-400 transition-colors duration-150">
+                Near: Sunrise Motel, Sirhind Road Patial, Punjab 147004
+              </p>
+              <p>
+                <span className="text-white/25 text-xs uppercase tracking-widest block mb-0.5">Phone</span>
+                <a href="tel:+919814830550" className="hover:text-amber-400 transition-colors duration-150">
                   +91 98148 30550
                 </a>
               </p>
               <p>
                 <span className="text-white/25 text-xs uppercase tracking-widest block mb-0.5">Email</span>
                 <a href="theexpertssalon@gmail.com" className="hover:text-amber-400 transition-colors duration-150">
+                <a href="mailto:theexpertssalon@gmail.com" className="hover:text-amber-400 transition-colors duration-150">
                   theexpertssalon@gmail.com
                 </a>
               </p>
@@ -626,14 +632,17 @@ function SiteFooter() {
             © {new Date().getFullYear()} The Experts Hair Salon · All rights reserved
           </p>
           <div className="flex items-center gap-5">
-            {["Privacy Policy", "Terms of Service"].map((label) => (
-              <a
+            {[
+              { label: "Privacy Policy", to: "/privacy-policy" },
+              { label: "Terms of Service", to: "/terms-of-service" },
+            ].map(({ label, to }) => (
+              <Link
                 key={label}
-                href="#"
+                to={to}
                 className="text-[11px] text-white/25 hover:text-white/50 transition-colors duration-150 tracking-wide"
               >
                 {label}
-              </a>
+              </Link>
             ))}
           </div>
         </div>
