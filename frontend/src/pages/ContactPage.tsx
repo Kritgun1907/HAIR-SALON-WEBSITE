@@ -37,7 +37,6 @@ const contactDetails = [
 const hours = [
   { day: "Monday – Friday", time: "09:00 AM – 09:00 PM" },
   { day: "Saturday", time: "09:00 AM – 09:00 PM" },
-  { day: "Sunday", time: "10:00 AM – 06:00 PM" },
 ];
 
 const fadeUp = {
