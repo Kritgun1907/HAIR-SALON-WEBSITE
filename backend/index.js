@@ -82,7 +82,7 @@ async function ensureOwner() {
 
 // ── New: session & auth packages ─────────────────────────────────────────────
 const session = require("express-session");
-const MongoStore = require("connect-mongo");
+const MongoStore = require("connect-mongo").default;
 const { authenticate, authorize } = require("./middleware/authMiddleware");
 
 // ── Configuration ────────────────────────────────────────────────────────────
