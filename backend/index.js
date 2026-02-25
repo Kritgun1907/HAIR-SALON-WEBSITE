@@ -481,3 +481,11 @@ if (require.main === module) {
 }
 
 module.exports = app;
+
+// ── Vercel config: disable built-in body parser so multer can handle
+//    multipart/form-data (file uploads) correctly in serverless mode. ─────────
+module.exports.config = {
+  api: {
+    bodyParser: false,
+  },
+};

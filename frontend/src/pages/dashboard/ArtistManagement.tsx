@@ -285,13 +285,17 @@ export default function ArtistManagement() {
     try {
       const fd = new FormData();
       fd.append("photo", file);
-      await fetch(`${API}/api/artists/${artistId}/photo`, {
+      const res = await fetch(`${API}/api/artists/${artistId}/photo`, {
         method: "POST",
         credentials: "include",
         body: fd,
       });
-    } catch {
-      // silently fail; photo URL fallback still works
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error("[upload] Photo upload failed:", res.status, data);
+      }
+    } catch (err) {
+      console.error("[upload] Photo upload network error:", err);
     } finally {
       setUploadingPhoto(false);
     }

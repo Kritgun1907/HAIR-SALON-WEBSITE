@@ -292,7 +292,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: 4.5 * 1024 * 1024 }, // 4.5 MB (Vercel request body limit)
   fileFilter: (_req, file, cb) => {
     const allowed = /jpeg|jpg|png|webp|gif/;
     const extOk = allowed.test(path.extname(file.originalname).toLowerCase());
@@ -320,8 +320,11 @@ router.post(
       }
 
       if (!req.file) {
-        return res.status(400).json({ error: "No valid image file provided. Allowed: jpg, png, webp, gif (max 5 MB)" });
+        console.error("[artists] Photo upload: req.file is undefined. Content-Type:", req.headers["content-type"]);
+        return res.status(400).json({ error: "No valid image file provided. Allowed: jpg, png, webp, gif (max 4.5 MB)" });
       }
+
+      console.log("[artists] Photo uploaded to Cloudinary:", req.file.path);
 
       // Delete old photo from Cloudinary if it was a Cloudinary URL
       if (artist.photo && artist.photo.includes("cloudinary.com")) {
