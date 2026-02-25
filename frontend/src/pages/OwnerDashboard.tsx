@@ -25,6 +25,7 @@ import DashboardAnalyticsView from "@/pages/dashboard/shared/DashboardAnalyticsV
 import ServiceManagement from "@/pages/dashboard/ServiceManagement";
 import TeamManagement from "@/pages/dashboard/TeamManagement";
 import ArtistManagement from "@/pages/dashboard/ArtistManagement";
+import ArtistDashboardView from "@/pages/dashboard/ArtistDashboardView";
 
 const ownerLinks = [
   { to: "/dashboard/owner", label: "Overview", icon: LayoutDashboard },
@@ -43,6 +44,7 @@ export default function OwnerDashboard() {
         <Route path="analytics" element={<DashboardAnalyticsView />} />
         <Route path="services" element={<ServiceManagement />} />
         <Route path="artists" element={<ArtistManagement />} />
+        <Route path="artist-view/:id" element={<ArtistDashboardView />} />
         <Route path="team" element={<TeamManagement />} />
       </Routes>
     </DashboardLayout>

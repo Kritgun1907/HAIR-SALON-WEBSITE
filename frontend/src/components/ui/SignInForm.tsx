@@ -119,6 +119,7 @@ export default function SignInForm() {
     if (user.role === "receptionist") navigate("/visit-entry");
     else if (user.role === "manager") navigate("/dashboard/manager");
     else if (user.role === "owner") navigate("/dashboard/owner");
+    else if (user.role === "artist") navigate("/dashboard/artist");
   }, [user, navigate]);
 
   // Simple client-side validation
@@ -149,6 +150,7 @@ export default function SignInForm() {
     if (result.role === "receptionist") navigate("/visit-entry");
     else if (result.role === "manager") navigate("/dashboard/manager");
     else if (result.role === "owner") navigate("/dashboard/owner");
+    else if (result.role === "artist") navigate("/dashboard/artist");
   };
 
   return (

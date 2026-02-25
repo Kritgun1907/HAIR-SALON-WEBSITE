@@ -9,7 +9,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
-export type Role = "receptionist" | "manager" | "owner";
+export type Role = "receptionist" | "manager" | "owner" | "artist";
 
 export interface AuthUser {
   id: string;

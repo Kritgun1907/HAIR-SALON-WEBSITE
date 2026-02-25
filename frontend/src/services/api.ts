@@ -93,7 +93,10 @@ export interface CreateVisitPayload {
   serviceType?: string;
   serviceIds: string[];
   discountPercent: number;
-  razorpayPaymentId: string;
+  paymentMethod: "online" | "cash" | "partial";
+  cashAmount?: number;
+  onlineAmount?: number;
+  razorpayPaymentId?: string;
 }
 
 export interface CreateVisitResult {

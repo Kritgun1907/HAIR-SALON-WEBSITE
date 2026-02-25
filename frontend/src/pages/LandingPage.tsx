@@ -196,20 +196,7 @@ export default function LandingPage() {
             </Link>
           </motion.div>
 
-          {/* Scroll nudge */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.8, duration: 0.5 }}
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5"
-          >
-            <span className="text-[10px] tracking-[0.18em] uppercase text-stone-400 font-medium">Scroll</span>
-            <motion.div
-              animate={{ y: [0, 7, 0] }}
-              transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-              className="w-px h-8 bg-linear-to-b from-stone-400 to-transparent rounded-full"
-            />
-          </motion.div>
+
         </motion.div>
       </div>
 

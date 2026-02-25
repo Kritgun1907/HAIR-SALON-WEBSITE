@@ -2,10 +2,10 @@
  * @file Artist.js
  * @description Mongoose model for salon artists.
  *
- * Artists are NOT user accounts — they are simple directory entries
- * that appear in the visit-entry form's "Artist" dropdown.
+ * Artists have an optional linked User account (role: "artist") for
+ * dashboard access. They also carry commission %, registration ID,
+ * and a photo URL — all managed from the owner/manager panels.
  *
- * Only managers and owners can create / update / delete artists.
  * Soft-delete via `isActive: false` keeps historical visit references intact.
  */
 
@@ -28,6 +28,34 @@ const artistSchema = new mongoose.Schema(
         message: "Enter a valid 10-digit Indian mobile number",
       },
     },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: null,
+    },
+    registrationId: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    commission: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    photo: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    /** Link to the User document that lets this artist sign in */
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
@@ -35,5 +63,7 @@ const artistSchema = new mongoose.Schema(
 
 /** Index for quick lookups in the form-data endpoint. */
 artistSchema.index({ isActive: 1, name: 1 });
+artistSchema.index({ userId: 1 });
+artistSchema.index({ email: 1 }, { sparse: true });
 
 module.exports = mongoose.model("Artist", artistSchema);

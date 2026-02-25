@@ -43,10 +43,21 @@ const createRules = [
     .isArray({ min: 1 })
     .withMessage("At least one service is required"),
   body("serviceIds.*").isMongoId().withMessage("Invalid service ID"),
+  body("paymentMethod")
+    .optional()
+    .isIn(["online", "cash", "partial"])
+    .withMessage("paymentMethod must be online, cash, or partial"),
+  body("cashAmount")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("cashAmount must be >= 0"),
+  body("onlineAmount")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("onlineAmount must be >= 0"),
   body("razorpayPaymentId")
-    .trim()
-    .notEmpty()
-    .withMessage("Payment ID is required"),
+    .optional({ values: "null" })
+    .trim(),
   body("discountPercent")
     .optional()
     .isFloat({ min: 0, max: 100 })
@@ -73,7 +84,10 @@ router.post("/", createRules, async (req, res) => {
       serviceType,
       serviceIds,
       discountPercent = 0,
-      razorpayPaymentId,
+      paymentMethod = "online",
+      cashAmount = 0,
+      onlineAmount = 0,
+      razorpayPaymentId = null,
     } = req.body;
 
     // ── Resolve services from DB (authoritative prices) ───────────────────
@@ -97,6 +111,36 @@ router.post("/", createRules, async (req, res) => {
     const discountAmount = Math.round(subtotal * (pct / 100));
     const finalTotal = Math.max(0, subtotal - discountAmount);
 
+    // ── Validate payment method constraints ──────────────────────────────
+    // For "online" mode: razorpayPaymentId is required
+    if (paymentMethod === "online" && !razorpayPaymentId) {
+      return res.status(400).json({ error: "Razorpay Payment ID is required for online payment" });
+    }
+    // For "partial" mode: razorpayPaymentId is required + cashAmount must be valid
+    if (paymentMethod === "partial") {
+      if (!razorpayPaymentId) {
+        return res.status(400).json({ error: "Razorpay Payment ID is required for partial payment" });
+      }
+      if (!cashAmount || cashAmount <= 0 || cashAmount >= finalTotal) {
+        return res.status(400).json({ error: "Cash amount must be between ₹1 and total minus ₹1 for partial payment" });
+      }
+    }
+
+    // ── Derive cash / online split amounts ───────────────────────────────
+    let derivedCash = 0;
+    let derivedOnline = 0;
+    if (paymentMethod === "cash") {
+      derivedCash = finalTotal;
+      derivedOnline = 0;
+    } else if (paymentMethod === "partial") {
+      derivedCash = Math.round(Number(cashAmount));
+      derivedOnline = finalTotal - derivedCash;
+    } else {
+      // "online"
+      derivedCash = 0;
+      derivedOnline = finalTotal;
+    }
+
     // ── Create visit document ─────────────────────────────────────────────
     const visit = await Visit.create({
       name,
@@ -114,8 +158,11 @@ router.post("/", createRules, async (req, res) => {
       discountPercent: pct,
       discountAmount,
       finalTotal,
+      paymentMethod,
+      cashAmount: derivedCash,
+      onlineAmount: derivedOnline,
       paymentStatus: "success",
-      razorpayPaymentId,
+      razorpayPaymentId: razorpayPaymentId || null,
     });
 
     return res.status(201).json({

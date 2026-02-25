@@ -44,6 +44,13 @@ const visitSchema = new mongoose.Schema(
     finalTotal: { type: Number, required: true, min: 0 },
 
     // ── Payment ──
+    paymentMethod: {
+      type: String,
+      enum: ["online", "cash", "partial"],
+      default: "online",
+    },
+    cashAmount: { type: Number, default: 0, min: 0 },
+    onlineAmount: { type: Number, default: 0, min: 0 },
     paymentStatus: {
       type: String,
       enum: ["pending", "success", "failed"],

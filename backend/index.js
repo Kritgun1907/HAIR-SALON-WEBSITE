@@ -116,6 +116,10 @@ function isVercelOrigin(origin) {
 // ── Express app ──────────────────────────────────────────────────────────────
 const app = express();
 
+// Serve uploaded artist photos
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Required for secure cookies behind Vercel's reverse proxy
 app.set("trust proxy", 1);
 
@@ -463,6 +467,12 @@ app.get("/api/health", async (_req, res) => {
 
 // ─── Analytics Routes (mounted sub-router) ──────────────────────────────────
 app.use("/api/analytics", authenticate, authorize("manager", "owner"), require("./routes/analytics"));
+
+// ─── Artist Dashboard Routes (artist-only) ──────────────────────────────────
+app.use("/api/artist-dashboard", authenticate, authorize("artist"), require("./routes/artistDashboard"));
+
+// ─── Owner-view of any artist's dashboard ────────────────────────────────────
+app.use("/api/owner/artist-dashboard", authenticate, authorize("owner"), require("./routes/ownerArtistDashboard"));
 
 // ─── Server / Vercel Export ──────────────────────────────────────────────────
 // When run locally (`node index.js`), start an HTTP server.

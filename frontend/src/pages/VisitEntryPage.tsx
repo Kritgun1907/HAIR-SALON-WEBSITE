@@ -14,7 +14,9 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Phone, Calendar,
-  Clock, Percent, Calculator,
+   Percent, Calculator,
+  Banknote, CreditCard, SplitSquareHorizontal,
+  IndianRupee,
 } from "lucide-react";
 import { SparklesCore } from "@/components/ui/sparkles";
 import { Input } from "@/components/ui/input";
@@ -27,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 import AppLayout from "@/layouts/AppLayout";
 import { useVisitForm } from "@/hooks/useVisitForm";
@@ -45,6 +48,8 @@ export default function VisitEntryPage() {
     discountPct,
     discountAmt,
     payable,
+    cashAmountNum,
+    onlinePayable,
     handleChange,
     handleSelect,
     handleMultiSelect,
@@ -218,27 +223,17 @@ export default function VisitEntryPage() {
               </Field>
 
               <Field label="Start Time" required error={errors.startTime}>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-                  <Input
-                    id="startTime" name="startTime" type="time"
-                    value={formData.startTime}
-                    onChange={handleChange}
-                    className="pl-9"
-                  />
-                </div>
+                <TimePicker
+                  value={formData.startTime}
+                  onChange={(v) => handleSelect("startTime")(v)}
+                />
               </Field>
 
               <Field label="End Time" required error={errors.endTime}>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-                  <Input
-                    id="endTime" name="endTime" type="time"
-                    value={formData.endTime}
-                    onChange={handleChange}
-                    className="pl-9"
-                  />
-                </div>
+                <TimePicker
+                  value={formData.endTime}
+                  onChange={(v) => handleSelect("endTime")(v)}
+                />
               </Field>
 
               <Field label="Services" required error={errors.amount} className="sm:col-span-2">
@@ -296,6 +291,108 @@ export default function VisitEntryPage() {
               </Field>
             </div>
 
+            {/* ── Payment Mode Selection ── */}
+            <AnimatePresence>
+              {subtotal > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-5"
+                >
+                  <Label className="text-xs font-semibold tracking-wide uppercase text-stone-500 mb-3 block">
+                    Payment Method
+                  </Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Online */}
+                    <button
+                      type="button"
+                      onClick={() => handleSelect("paymentMode")("online")}
+                      className={cn(
+                        "relative flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-4 transition-all duration-200",
+                        formData.paymentMode === "online"
+                          ? "border-stone-900 bg-stone-900 text-white shadow-lg"
+                          : "border-stone-200 bg-white text-stone-600 hover:border-stone-400 hover:shadow-sm"
+                      )}
+                    >
+                      <CreditCard className="w-5 h-5" />
+                      <span className="text-xs font-semibold tracking-wide uppercase">Full Online</span>
+                      <span className={cn("text-[10px]", formData.paymentMode === "online" ? "text-stone-300" : "text-stone-400")}>
+                        Pay via Razorpay
+                      </span>
+                    </button>
+
+                    {/* Cash */}
+                    <button
+                      type="button"
+                      onClick={() => handleSelect("paymentMode")("cash")}
+                      className={cn(
+                        "relative flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-4 transition-all duration-200",
+                        formData.paymentMode === "cash"
+                          ? "border-emerald-600 bg-emerald-600 text-white shadow-lg"
+                          : "border-stone-200 bg-white text-stone-600 hover:border-stone-400 hover:shadow-sm"
+                      )}
+                    >
+                      <Banknote className="w-5 h-5" />
+                      <span className="text-xs font-semibold tracking-wide uppercase">Full Cash</span>
+                      <span className={cn("text-[10px]", formData.paymentMode === "cash" ? "text-emerald-200" : "text-stone-400")}>
+                        Pay at counter
+                      </span>
+                    </button>
+
+                    {/* Partial */}
+                    <button
+                      type="button"
+                      onClick={() => handleSelect("paymentMode")("partial")}
+                      className={cn(
+                        "relative flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-4 transition-all duration-200",
+                        formData.paymentMode === "partial"
+                          ? "border-amber-600 bg-amber-600 text-white shadow-lg"
+                          : "border-stone-200 bg-white text-stone-600 hover:border-stone-400 hover:shadow-sm"
+                      )}
+                    >
+                      <SplitSquareHorizontal className="w-5 h-5" />
+                      <span className="text-xs font-semibold tracking-wide uppercase">Split Payment</span>
+                      <span className={cn("text-[10px]", formData.paymentMode === "partial" ? "text-amber-200" : "text-stone-400")}>
+                        Cash + Online
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* ── Partial: Cash Amount Input ── */}
+                  <AnimatePresence>
+                    {formData.paymentMode === "partial" && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-4"
+                      >
+                        <Field label="Cash Amount (₹)" required error={errors.cashAmount}>
+                          <div className="relative">
+                            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+                            <Input
+                              id="cashAmount" name="cashAmount" type="number"
+                              placeholder={`Enter cash amount (max ₹${(payable - 1).toLocaleString("en-IN")})`}
+                              value={formData.cashAmount}
+                              onChange={handleChange}
+                              min="0.01"
+                              max={payable - 1}
+                              step="0.01"
+                              className={cn(
+                                "pl-9",
+                                errors.cashAmount && "border-red-400 focus-visible:ring-red-300"
+                              )}
+                            />
+                          </div>
+                        </Field>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Payable summary */}
             <AnimatePresence>
               {subtotal > 0 && (
@@ -321,6 +418,45 @@ export default function VisitEntryPage() {
                     <span>Total Payable</span>
                     <span className="text-xl">₹{payable.toLocaleString("en-IN")}</span>
                   </div>
+
+                  {/* ── Split breakdown for partial mode ── */}
+                  <AnimatePresence>
+                    {formData.paymentMode === "partial" && cashAmountNum > 0 && onlinePayable > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="border-t border-dashed border-stone-300 mt-3 pt-3 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-1.5 text-emerald-600">
+                            <Banknote className="w-3.5 h-3.5" /> Cash
+                          </span>
+                          <span className="font-semibold text-emerald-600">
+                            ₹{cashAmountNum.toLocaleString("en-IN", { minimumFractionDigits: cashAmountNum % 1 ? 2 : 0, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-1.5 text-blue-600">
+                            <CreditCard className="w-3.5 h-3.5" /> Online (Razorpay)
+                          </span>
+                          <span className="font-semibold text-blue-600">
+                            ₹{onlinePayable.toLocaleString("en-IN", { minimumFractionDigits: onlinePayable % 1 ? 2 : 0, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Cash-only note */}
+                  {formData.paymentMode === "cash" && (
+                    <div className="border-t border-dashed border-stone-300 mt-3 pt-3">
+                      <div className="flex items-center gap-2 text-sm text-emerald-600">
+                        <Banknote className="w-4 h-4" />
+                        <span className="font-medium">Full amount to be collected in cash</span>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -378,7 +514,14 @@ export default function VisitEntryPage() {
                   particleColor="#c8a97e"
                 />
               </div>
-              <div className="absolute inset-0 bg-stone-900 hover:bg-stone-800 transition-colors duration-200 z-0" />
+              <div className={cn(
+                "absolute inset-0 transition-colors duration-200 z-0",
+                formData.paymentMode === "cash"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : formData.paymentMode === "partial"
+                    ? "bg-amber-600 hover:bg-amber-700"
+                    : "bg-stone-900 hover:bg-stone-800"
+              )} />
               <span className="relative z-10 flex items-center justify-center gap-2">
                 {isLoading ? (
                   <>
@@ -387,7 +530,21 @@ export default function VisitEntryPage() {
                       transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                       className="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
                     />
-                    Redirecting…
+                    {formData.paymentMode === "cash" ? "Recording…" : "Redirecting…"}
+                  </>
+                ) : formData.paymentMode === "cash" ? (
+                  <>
+                    <Banknote className="w-4 h-4" />
+                    {payable > 0
+                      ? `Record Cash Payment — ₹${payable.toLocaleString("en-IN")}`
+                      : "Record Cash Payment"}
+                  </>
+                ) : formData.paymentMode === "partial" ? (
+                  <>
+                    <SplitSquareHorizontal className="w-4 h-4" />
+                    {onlinePayable > 0
+                      ? `Pay ₹${onlinePayable.toLocaleString("en-IN")} Online`
+                      : "Pay with Razorpay"}
                   </>
                 ) : (
                   <>
@@ -401,12 +558,14 @@ export default function VisitEntryPage() {
           </div>
 
           {/* Security note */}
-          <p className="text-center text-xs text-stone-400 mt-4 flex items-center justify-center gap-1">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
-            </svg>
-            Secured by Razorpay · 256-bit SSL encryption
-          </p>
+          {formData.paymentMode !== "cash" && (
+            <p className="text-center text-xs text-stone-400 mt-4 flex items-center justify-center gap-1">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+              </svg>
+              Secured by Razorpay · 256-bit SSL encryption
+            </p>
+          )}
         </form>
       </motion.div>
       </div>
