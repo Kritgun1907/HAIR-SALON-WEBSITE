@@ -116,13 +116,6 @@ function isVercelOrigin(origin) {
 // ── Express app ──────────────────────────────────────────────────────────────
 const app = express();
 
-// Serve uploaded artist photos
-const path = require("path");
-const uploadsPath = process.env.VERCEL
-  ? path.join("/tmp", "uploads")
-  : path.join(__dirname, "uploads");
-app.use("/uploads", express.static(uploadsPath));
-
 // Required for secure cookies behind Vercel's reverse proxy
 app.set("trust proxy", 1);
 
