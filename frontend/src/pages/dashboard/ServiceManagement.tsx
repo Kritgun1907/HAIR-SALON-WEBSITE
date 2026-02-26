@@ -36,6 +36,7 @@ interface ServiceRecord {
   category: string;
   isActive: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface ServiceFormData {
@@ -430,9 +431,6 @@ export default function ServiceManagement() {
                 Status
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Date Added
-              </th>
-              <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Actions
               </th>
             </tr>
@@ -441,7 +439,7 @@ export default function ServiceManagement() {
             {loadingServices
               ? Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-stone-100">
-                    {[1, 2, 3, 4, 5, 6].map((j) => (
+                    {[1, 2, 3, 4, 5].map((j) => (
                       <td key={j} className="px-6 py-4">
                         <div className="h-4 bg-stone-100 rounded animate-pulse" />
                       </td>
@@ -452,7 +450,7 @@ export default function ServiceManagement() {
                 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={5}
                         className="px-6 py-16 text-center text-stone-400 text-sm"
                       >
                         No services yet. Add your first service above.
@@ -464,9 +462,28 @@ export default function ServiceManagement() {
                       key={s._id}
                       className="border-b border-stone-100 hover:bg-stone-50/50 transition-colors"
                     >
-                      {/* Name */}
+                      {/* Name with timestamps */}
                       <td className="px-6 py-4">
                         <p className="font-medium text-stone-900">{s.name}</p>
+                        <p className="text-[11px] text-stone-500 mt-1">
+                          Created: {new Date(s.createdAt).toLocaleString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                          {" · "}
+                          Updated: {new Date(s.updatedAt).toLocaleString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </p>
                       </td>
 
                       {/* Price */}
@@ -502,15 +519,6 @@ export default function ServiceManagement() {
                             Inactive
                           </span>
                         )}
-                      </td>
-
-                      {/* Date Added */}
-                      <td className="px-6 py-4 text-stone-500 text-xs">
-                        {new Date(s.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
                       </td>
 
                       {/* Actions */}

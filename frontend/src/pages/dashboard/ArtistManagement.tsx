@@ -45,6 +45,7 @@ interface ArtistRecord {
   userId: string | null;
   isActive: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface ArtistFormData {
@@ -619,9 +620,6 @@ export default function ArtistManagement() {
                 Login
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Date Added
-              </th>
-              <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Actions
               </th>
             </tr>
@@ -630,7 +628,7 @@ export default function ArtistManagement() {
             {loadingArtists
               ? Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-b border-stone-100">
-                    {[1, 2, 3, 4, 5, 6, 7].map((j) => (
+                    {[1, 2, 3, 4, 5, 6].map((j) => (
                       <td key={j} className="px-6 py-4">
                         <div className="h-4 bg-stone-100 rounded animate-pulse" />
                       </td>
@@ -641,7 +639,7 @@ export default function ArtistManagement() {
                 ? (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={6}
                         className="px-6 py-16 text-center text-stone-400 text-sm"
                       >
                         No artists yet. Add your first artist above.
@@ -653,7 +651,7 @@ export default function ArtistManagement() {
                       key={a._id}
                       className="border-b border-stone-100 hover:bg-stone-50/50 transition-colors"
                     >
-                      {/* Name */}
+                      {/* Name with timestamps */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {a.photo ? (
@@ -669,6 +667,25 @@ export default function ArtistManagement() {
                           )}
                           <p className="font-medium text-stone-900">{a.name}</p>
                         </div>
+                        <p className="text-[11px] text-stone-500 mt-1">
+                          Created: {new Date(a.createdAt).toLocaleString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                          {" · "}
+                          Updated: {new Date(a.updatedAt).toLocaleString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </p>
                       </td>
 
                       {/* Phone */}
@@ -710,15 +727,6 @@ export default function ArtistManagement() {
                         ) : (
                           <span className="text-xs text-stone-400">—</span>
                         )}
-                      </td>
-
-                      {/* Date Added */}
-                      <td className="px-6 py-4 text-stone-500 text-xs">
-                        {new Date(a.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
                       </td>
 
                       {/* Actions */}

@@ -34,6 +34,7 @@ interface UserRecord {
   role: "receptionist" | "manager" | "owner";
   isActive: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface UserFormData {
@@ -447,9 +448,6 @@ export default function TeamManagement() {
                 Status
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Date Added
-              </th>
-              <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Actions
               </th>
             </tr>
@@ -458,7 +456,7 @@ export default function TeamManagement() {
             {loadingUsers
               ? Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-b border-stone-100">
-                    {[1, 2, 3, 4, 5].map((j) => (
+                    {[1, 2, 3, 4].map((j) => (
                       <td key={j} className="px-6 py-4">
                         <div className="h-4 bg-stone-100 rounded animate-pulse" />
                       </td>
@@ -469,7 +467,7 @@ export default function TeamManagement() {
                 ? (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={4}
                         className="px-6 py-16 text-center text-stone-400 text-sm"
                       >
                         No team members yet. Add your first member above.
@@ -481,11 +479,30 @@ export default function TeamManagement() {
                       key={u._id}
                       className="border-b border-stone-100 hover:bg-stone-50/50 transition-colors"
                     >
-                      {/* Name & Email */}
+                      {/* Name & Email with timestamps */}
                       <td className="px-6 py-4">
                         <p className="font-medium text-stone-900">{u.name}</p>
                         <p className="text-xs text-stone-500 mt-0.5">
                           {u.email}
+                        </p>
+                        <p className="text-[11px] text-stone-500 mt-1">
+                          Created: {new Date(u.createdAt).toLocaleString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                          {" · "}
+                          Updated: {new Date(u.updatedAt).toLocaleString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
                         </p>
                       </td>
 
@@ -515,15 +532,6 @@ export default function TeamManagement() {
                             Inactive
                           </span>
                         )}
-                      </td>
-
-                      {/* Date */}
-                      <td className="px-6 py-4 text-stone-500">
-                        {new Date(u.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
                       </td>
 
                       {/* Actions */}
