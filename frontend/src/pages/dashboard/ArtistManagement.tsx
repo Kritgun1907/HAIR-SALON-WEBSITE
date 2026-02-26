@@ -904,30 +904,33 @@ export default function ArtistManagement() {
               </div>
 
               {/* Fields */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-stone-100 border border-stone-200 overflow-hidden">
-                            {resolvePhotoUrl(a.photo) ? (
-                              <img
-                                src={resolvePhotoUrl(a.photo)!}
-                                alt={a.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-stone-500">
-                                {a.name.slice(0, 2).toUpperCase()}
-                              </div>
-                            )}
-                          </div>
-                          <div className="space-y-0.5">
-                            <div className="font-semibold text-stone-900">{a.name}</div>
-                            <div className="text-xs text-stone-500 break-all">
-                              {a.email || "No email"}
-                            </div>
-                            <div className="text-xs text-stone-500">{a.phone}</div>
-                          </div>
-                        </div>
-                      </td>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, name: e.target.value }))
+                    }
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    value={editForm.phone}
+                    onChange={(e) =>
+                      setEditForm((p) => ({
+                        ...p,
+                        phone: e.target.value.replace(/\D/g, "").slice(0, 10),
                       }))
                     }
                     className={inputClass}
