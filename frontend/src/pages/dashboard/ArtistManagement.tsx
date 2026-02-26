@@ -619,6 +619,9 @@ export default function ArtistManagement() {
                 Login
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
+                Date Added
+              </th>
+              <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Actions
               </th>
             </tr>
@@ -627,7 +630,7 @@ export default function ArtistManagement() {
             {loadingArtists
               ? Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-b border-stone-100">
-                    {[1, 2, 3, 4, 5, 6].map((j) => (
+                    {[1, 2, 3, 4, 5, 6, 7].map((j) => (
                       <td key={j} className="px-6 py-4">
                         <div className="h-4 bg-stone-100 rounded animate-pulse" />
                       </td>
@@ -638,7 +641,7 @@ export default function ArtistManagement() {
                 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="px-6 py-16 text-center text-stone-400 text-sm"
                       >
                         No artists yet. Add your first artist above.
@@ -707,6 +710,15 @@ export default function ArtistManagement() {
                         ) : (
                           <span className="text-xs text-stone-400">—</span>
                         )}
+                      </td>
+
+                      {/* Date Added */}
+                      <td className="px-6 py-4 text-stone-500 text-xs">
+                        {new Date(a.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </td>
 
                       {/* Actions */}

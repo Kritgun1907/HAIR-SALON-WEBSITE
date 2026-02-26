@@ -430,6 +430,9 @@ export default function ServiceManagement() {
                 Status
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
+                Date Added
+              </th>
+              <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Actions
               </th>
             </tr>
@@ -438,7 +441,7 @@ export default function ServiceManagement() {
             {loadingServices
               ? Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-stone-100">
-                    {[1, 2, 3, 4, 5].map((j) => (
+                    {[1, 2, 3, 4, 5, 6].map((j) => (
                       <td key={j} className="px-6 py-4">
                         <div className="h-4 bg-stone-100 rounded animate-pulse" />
                       </td>
@@ -449,7 +452,7 @@ export default function ServiceManagement() {
                 ? (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="px-6 py-16 text-center text-stone-400 text-sm"
                       >
                         No services yet. Add your first service above.
@@ -499,6 +502,15 @@ export default function ServiceManagement() {
                             Inactive
                           </span>
                         )}
+                      </td>
+
+                      {/* Date Added */}
+                      <td className="px-6 py-4 text-stone-500 text-xs">
+                        {new Date(s.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </td>
 
                       {/* Actions */}
