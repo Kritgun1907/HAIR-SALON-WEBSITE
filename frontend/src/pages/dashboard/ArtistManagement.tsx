@@ -45,6 +45,7 @@ interface ArtistRecord {
   commission: number;
   photo: string | null;
   userId: string | null;
+  loginActive?: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -701,11 +702,11 @@ export default function ArtistManagement() {
 
       {/* ── Artists Table ── */}
       <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm overflow-x-auto">
-        <table className="w-full text-sm min-w-[700px]">
+        <table className="w-full text-sm min-w-175">
           <thead className="bg-stone-50 border-b border-stone-200">
             <tr>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Name
+                Name / Email
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Phone
@@ -717,7 +718,7 @@ export default function ArtistManagement() {
                 Status
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Login
+                Actions
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Actions
@@ -742,13 +743,12 @@ export default function ArtistManagement() {
                         colSpan={6}
                         className="px-6 py-16 text-center text-stone-400 text-sm"
                       >
-                        No artists yet. Add your first artist above.
-                      </td>
-                    </tr>
-                  )
-                : artists.map((a) => (
-                    <tr
-                      key={a._id}
+                          <div className="space-y-0.5">
+                            <div className="font-semibold text-stone-900">{a.name}</div>
+                            <div className="text-xs text-stone-500 break-all">
+                              {a.email || "No email"}
+                            </div>
+                          </div>
                       className="group border-b border-stone-100 hover:bg-stone-50/50 transition-colors"
                     >
                       {/* Name with timestamps */}
@@ -806,29 +806,25 @@ export default function ArtistManagement() {
                         </span>
                       </td>
 
-                      {/* Status badge */}
+                      {/* Status (login credential state) */}
                       <td className="px-6 py-4">
-                        {a.isActive ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />{" "}
-                            Active
-                          </span>
+                        {a.userId ? (
+                          a.loginActive ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />{" "}
+                              Login active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />{" "}
+                              Login disabled
+                            </span>
+                          )
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-500 border border-stone-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />{" "}
-                            Inactive
+                            No login
                           </span>
-                        )}
-                      </td>
-
-                      {/* Login enabled */}
-                      <td className="px-6 py-4">
-                        {a.userId ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                            ✓ Enabled
-                          </span>
-                        ) : (
-                          <span className="text-xs text-stone-400">—</span>
                         )}
                       </td>
 
@@ -906,33 +902,30 @@ export default function ArtistManagement() {
               </div>
 
               {/* Fields */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.name}
-                    onChange={(e) =>
-                      setEditForm((p) => ({ ...p, name: e.target.value }))
-                    }
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    maxLength={10}
-                    value={editForm.phone}
-                    onChange={(e) =>
-                      setEditForm((p) => ({
-                        ...p,
-                        phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-lg bg-stone-100 border border-stone-200 overflow-hidden">
+                            {resolvePhotoUrl(a.photo) ? (
+                              <img
+                                src={resolvePhotoUrl(a.photo)!}
+                                alt={a.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-stone-500">
+                                {a.name.slice(0, 2).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="font-semibold text-stone-900">{a.name}</div>
+                            <div className="text-xs text-stone-500 break-all">
+                              {a.email || "No email"}
+                            </div>
+                            <div className="text-xs text-stone-500">{a.phone}</div>
+                          </div>
+                        </div>
+                      </td>
                       }))
                     }
                     className={inputClass}
