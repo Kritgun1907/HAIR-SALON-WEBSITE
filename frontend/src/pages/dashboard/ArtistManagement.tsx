@@ -28,12 +28,10 @@ import {
   Key,
   Briefcase,
   Eye,
-  EyeOff,
   Upload,
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
 
-const API = import.meta.env.VITE_BACKEND_URL || "";
+const API = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface ArtistRecord {
@@ -67,7 +65,6 @@ const inputClass =
 // ── Component ────────────────────────────────────────────────────────────────
 export default function ArtistManagement() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
   const addPhotoInputRef = useRef<HTMLInputElement>(null);
   const editPhotoInputRef = useRef<HTMLInputElement>(null);
   const [addPhotoPreview, setAddPhotoPreview] = useState<string | null>(null);
@@ -90,7 +87,6 @@ export default function ArtistManagement() {
     commission: "",
     photo: "",
   });
-  const [showAddPassword, setShowAddPassword] = useState(false);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -107,15 +103,6 @@ export default function ArtistManagement() {
     photo: "",
   });
   const [editFormError, setEditFormError] = useState("");
-  const [showEditPassword, setShowEditPassword] = useState(false);
-  const [newPasswordReveal, setNewPasswordReveal] = useState<
-    | null
-    | {
-        name: string;
-        email: string;
-        password: string;
-      }
-  >(null);
 
   // ── Fetch artists (all, including inactive) ────────────────────────────────
   const fetchArtists = async () => {
@@ -154,7 +141,6 @@ export default function ArtistManagement() {
       setEditFormError("");
       setEditPhotoFile(null);
       setEditPhotoPreview(null);
-      setShowEditPassword(false);
     }
   }, [editingArtist]);
 
@@ -261,47 +247,18 @@ export default function ArtistManagement() {
       return;
     }
 
-    const trimmedEmail = editForm.email.trim();
-    const existingEmail = editingArtist.email || "";
-    const newPassword = editForm.password.trim();
-    const emailForLogin = trimmedEmail || existingEmail;
-
-    if (newPassword) {
-      if (newPassword.length < 8) {
-        setEditFormError("New password must be at least 8 characters.");
-        return;
-      }
-      if (!emailForLogin) {
-        setEditFormError("Email is required to set a login.");
-        return;
-      }
-    }
-
     try {
-      const body: Record<string, unknown> = {
-        name: editForm.name,
-        phone: editForm.phone,
-        registrationId: editForm.registrationId || null,
-        commission: editForm.commission ? Number(editForm.commission) : 0,
-        photo: editForm.photo || null,
-      };
-
-      if (trimmedEmail !== existingEmail) {
-        body.email = trimmedEmail;
-      }
-      // If a password is being set and the email wasn't changed, include the current email
-      if (newPassword) {
-        body.password = newPassword;
-        if (!body.email && emailForLogin) {
-          body.email = emailForLogin;
-        }
-      }
-
       const res = await fetch(`${API}/api/artists/${editingArtist._id}`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          name: editForm.name,
+          phone: editForm.phone,
+          registrationId: editForm.registrationId || null,
+          commission: editForm.commission ? Number(editForm.commission) : 0,
+          photo: editForm.photo || null,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -310,21 +267,9 @@ export default function ArtistManagement() {
           await uploadPhotoFile(editingArtist._id, editPhotoFile);
         }
         fetchArtists();
-        if (newPassword) {
-          setNewPasswordReveal({
-            name: editingArtist.name,
-            email: (body.email as string) || emailForLogin,
-            password: newPassword,
-          });
-          if (editingArtist.userId && user?.id === editingArtist.userId) {
-            await logout();
-            navigate("/signin");
-          }
-        }
         setEditingArtist(null);
         setEditPhotoFile(null);
         setEditPhotoPreview(null);
-        setShowEditPassword(false);
       } else {
         setEditFormError(
           data.errors?.[0]?.msg || data.error || "Failed to update artist."
@@ -412,41 +357,6 @@ export default function ArtistManagement() {
       {fetchError && (
         <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
           Failed to load artists. Check your connection and refresh.
-        </div>
-      )}
-
-      {newPasswordReveal && (
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-amber-900">
-                New password saved for {newPasswordReveal.name}
-              </p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                Shown once. Login email: <span className="font-mono">{newPasswordReveal.email || "(not provided)"}</span>
-              </p>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="font-mono text-base bg-white border border-amber-200 rounded-lg px-3 py-1">
-                  {newPasswordReveal.password}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(newPasswordReveal.password)}
-                  className="text-xs px-3 py-1.5 rounded-lg border border-amber-200 bg-white text-amber-800 hover:bg-amber-100 transition-colors"
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setNewPasswordReveal(null)}
-              className="text-amber-700 hover:text-amber-900"
-              aria-label="Dismiss new password notification"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
         </div>
       )}
 
@@ -552,25 +462,15 @@ export default function ArtistManagement() {
                   <Key className="w-3 h-3 inline mr-1" /> Password
                   <span className="text-stone-400 font-normal ml-1">(min 8 chars)</span>
                 </label>
-                <div className="relative">
-                  <input
-                    type={showAddPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, password: e.target.value }))
-                    }
-                    className={`${inputClass} pr-11`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowAddPassword((p) => !p)}
-                    className="absolute inset-y-0 right-3 flex items-center text-stone-400 hover:text-stone-700"
-                    aria-label={showAddPassword ? "Hide password" : "Show password"}
-                  >
-                    {showAddPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, password: e.target.value }))
+                  }
+                  className={inputClass}
+                />
               </div>
 
               {/* Registration ID */}
@@ -701,11 +601,11 @@ export default function ArtistManagement() {
 
       {/* ── Artists Table ── */}
       <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm overflow-x-auto">
-        <table className="w-full text-sm min-w-175">
+        <table className="w-full text-sm min-w-[700px]">
           <thead className="bg-stone-50 border-b border-stone-200">
             <tr>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Name / Email
+                Name
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Phone
@@ -717,6 +617,9 @@ export default function ArtistManagement() {
                 Status
               </th>
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
+                Login
+              </th>
+              <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Actions
               </th>
             </tr>
@@ -725,7 +628,7 @@ export default function ArtistManagement() {
             {loadingArtists
               ? Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-b border-stone-100">
-                    {[1, 2, 3, 4, 5].map((j) => (
+                    {[1, 2, 3, 4, 5, 6].map((j) => (
                       <td key={j} className="px-6 py-4">
                         <div className="h-4 bg-stone-100 rounded animate-pulse" />
                       </td>
@@ -735,138 +638,145 @@ export default function ArtistManagement() {
               : artists.length === 0
                 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-16 text-center text-stone-400 text-sm">
-                        No artists found. Add one to get started.
+                      <td
+                        colSpan={6}
+                        className="px-6 py-16 text-center text-stone-400 text-sm"
+                      >
+                        No artists yet. Add your first artist above.
                       </td>
                     </tr>
                   )
-                : (
-                    artists.map((a) => (
-                      <tr
-                        key={a._id}
-                        className="group border-b border-stone-100 hover:bg-stone-50/50 transition-colors"
-                      >
-                        {/* Name + email with timestamps on hover */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            {a.photo ? (
-                              <img
-                                src={resolvePhotoUrl(a.photo)!}
-                                alt={a.name}
-                                className="w-8 h-8 rounded-full object-cover border border-stone-200 shrink-0"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center uppercase shrink-0">
-                                {a.name.charAt(0)}
-                              </div>
-                            )}
-                            <div className="space-y-0.5">
-                              <div className="font-semibold text-stone-900">{a.name}</div>
-                              <div className="text-xs text-stone-500 break-all">
-                                {a.email || "No email"}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-[11px] text-stone-500 mt-1 leading-snug opacity-0 max-h-0 overflow-hidden group-hover:opacity-100 group-hover:max-h-16 transition-all duration-200">
-                            <span className="block">
-                              Created: {new Date(a.createdAt).toLocaleString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: true,
-                              })}
-                            </span>
-                            <span className="block">
-                              Updated: {new Date(a.updatedAt).toLocaleString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: true,
-                              })}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Phone */}
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1.5 text-stone-600">
-                            <Phone className="w-3.5 h-3.5 text-stone-400" />
-                            {a.phone}
-                          </span>
-                        </td>
-
-                        {/* Commission */}
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                            {a.commission || 0}%
-                          </span>
-                        </td>
-
-                        {/* Status badge */}
-                        <td className="px-6 py-4">
-                          {a.isActive ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />{" "}
-                              Active
-                            </span>
+                : artists.map((a) => (
+                    <tr
+                      key={a._id}
+                      className="group border-b border-stone-100 hover:bg-stone-50/50 transition-colors"
+                    >
+                      {/* Name with timestamps */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {a.photo ? (
+                            <img
+                              src={resolvePhotoUrl(a.photo)!}
+                              alt={a.name}
+                              className="w-8 h-8 rounded-full object-cover border border-stone-200 shrink-0"
+                            />
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-500 border border-stone-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />{" "}
-                              Inactive
-                            </span>
+                            <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center uppercase shrink-0">
+                              {a.name.charAt(0)}
+                            </div>
                           )}
-                        </td>
+                          <p className="font-medium text-stone-900">{a.name}</p>
+                        </div>
+                        <div className="text-[11px] text-stone-500 mt-1 leading-snug opacity-0 max-h-0 overflow-hidden group-hover:opacity-100 group-hover:max-h-16 transition-all duration-200">
+                          <span className="block">
+                            Created: {new Date(a.createdAt).toLocaleString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}
+                          </span>
+                          <span className="block">
+                            Updated: {new Date(a.updatedAt).toLocaleString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}
+                          </span>
+                        </div>
+                      </td>
 
-                        {/* Actions */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
+                      {/* Phone */}
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 text-stone-600">
+                          <Phone className="w-3.5 h-3.5 text-stone-400" />
+                          {a.phone}
+                        </span>
+                      </td>
+
+                      {/* Commission */}
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          {a.commission || 0}%
+                        </span>
+                      </td>
+
+                      {/* Status badge */}
+                      <td className="px-6 py-4">
+                        {a.isActive ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />{" "}
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-500 border border-stone-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />{" "}
+                            Inactive
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Login enabled */}
+                      <td className="px-6 py-4">
+                        {a.userId ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            ✓ Enabled
+                          </span>
+                        ) : (
+                          <span className="text-xs text-stone-400">—</span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => navigate(`/dashboard/owner/artist-view/${a._id}`)}
+                            className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-300 rounded-lg px-3 py-1.5 transition-all"
+                            title="View artist dashboard"
+                          >
+                            <Eye className="w-3 h-3" /> Dashboard
+                          </button>
+
+                          <button
+                            onClick={() => setEditingArtist(a)}
+                            className="flex items-center gap-1.5 text-xs text-stone-600 hover:text-stone-900 border border-stone-200 hover:border-stone-300 rounded-lg px-3 py-1.5 transition-all"
+                          >
+                            <Pencil className="w-3 h-3" /> Edit
+                          </button>
+
+                          {a.isActive ? (
                             <button
-                              onClick={() => navigate(`/dashboard/owner/artist-view/${a._id}`)}
-                              className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-300 rounded-lg px-3 py-1.5 transition-all"
-                              title="View artist dashboard"
+                              onClick={() => handleDeactivate(a._id)}
+                              className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 border border-red-100 hover:border-red-200 rounded-lg px-3 py-1.5 transition-all"
                             >
-                              <Eye className="w-3 h-3" /> Dashboard
+                              <UserX className="w-3 h-3" /> Deactivate
                             </button>
-
+                          ) : (
                             <button
-                              onClick={() => setEditingArtist(a)}
-                              className="flex items-center gap-1.5 text-xs text-stone-600 hover:text-stone-900 border border-stone-200 hover:border-stone-300 rounded-lg px-3 py-1.5 transition-all"
+                              onClick={() => handleReactivate(a._id)}
+                              className="flex items-center gap-1.5 text-xs text-green-600 hover:text-green-800 border border-green-100 hover:border-green-200 rounded-lg px-3 py-1.5 transition-all"
                             >
-                              <Pencil className="w-3 h-3" /> Edit
+                              <UserCheck className="w-3 h-3" /> Reactivate
                             </button>
+                          )}
 
-                            {a.isActive ? (
-                              <button
-                                onClick={() => handleDeactivate(a._id)}
-                                className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 border border-red-100 hover:border-red-200 rounded-lg px-3 py-1.5 transition-all"
-                              >
-                                <UserX className="w-3 h-3" /> Deactivate
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleReactivate(a._id)}
-                                className="flex items-center gap-1.5 text-xs text-green-600 hover:text-green-800 border border-green-100 hover:border-green-200 rounded-lg px-3 py-1.5 transition-all"
-                              >
-                                <UserCheck className="w-3 h-3" /> Reactivate
-                              </button>
-                            )}
-
-                            <button
-                              onClick={() => handlePermanentDelete(a)}
-                              className="flex items-center gap-1.5 text-xs text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded-lg px-3 py-1.5 transition-all"
-                              title="Permanently delete from database"
-                            >
-                              <Trash2 className="w-3 h-3" /> Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
+                          <button
+                            onClick={() => handlePermanentDelete(a)}
+                            className="flex items-center gap-1.5 text-xs text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded-lg px-3 py-1.5 transition-all"
+                            title="Permanently delete from database"
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
           </tbody>
         </table>
       </div>
@@ -927,46 +837,6 @@ export default function ArtistManagement() {
                     }
                     className={inputClass}
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
-                    Email (for login)
-                  </label>
-                  <input
-                    type="email"
-                    value={editForm.email}
-                    onChange={(e) =>
-                      setEditForm((p) => ({ ...p, email: e.target.value }))
-                    }
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wider">
-                    New Password (optional)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showEditPassword ? "text" : "password"}
-                      placeholder="Leave blank to keep current password"
-                      value={editForm.password}
-                      onChange={(e) =>
-                        setEditForm((p) => ({ ...p, password: e.target.value }))
-                      }
-                      className={`${inputClass} pr-11`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowEditPassword((p) => !p)}
-                      className="absolute inset-y-0 right-3 flex items-center text-stone-400 hover:text-stone-700"
-                      aria-label={showEditPassword ? "Hide password" : "Show password"}
-                    >
-                      {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-stone-400 mt-1">
-                    Password will be shown once after saving.
-                  </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

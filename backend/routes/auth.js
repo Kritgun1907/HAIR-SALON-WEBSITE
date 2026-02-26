@@ -73,21 +73,11 @@ router.post(
       req.session.name = user.name;
       req.session.email = user.email;
 
-      // IMPORTANT: In serverless environments (Vercel), the function may
-      // terminate as soon as res.json() is called. express-session saves
-      // to MongoDB asynchronously, so the write could be lost. We must
-      // explicitly wait for the save to complete before responding.
-      req.session.save((saveErr) => {
-        if (saveErr) {
-          console.error("[auth] Session save error:", saveErr);
-          return res.status(500).json({ error: "Failed to create session" });
-        }
-        return res.json({
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        });
+      return res.json({
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       });
     } catch (err) {
       console.error("[auth] Login error:", err);
@@ -104,15 +94,7 @@ router.post("/logout", (req, res) => {
       console.error("[auth] Session destroy error:", err);
       return res.status(500).json({ error: "Failed to sign out" });
     }
-    // Clear the cookie with the SAME attributes it was set with.
-    // Safari will NOT delete a cookie unless path, sameSite, secure,
-    // and httpOnly all match the original Set-Cookie header exactly.
-    res.clearCookie("connect.sid", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-    });
+    res.clearCookie("connect.sid");
     return res.json({ ok: true });
   });
 });

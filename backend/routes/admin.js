@@ -161,13 +161,8 @@ router.patch(
         new: true,
       }).select("-passwordHash");
 
-      // Only invalidate sessions when security-sensitive fields change
-      // (email, password, role, or account deactivation).
-      // Changing just a name should NOT log the user out.
-      const credentialsChanged = updateObj.email || updateObj.passwordHash || updateObj.role || updateObj.isActive === false;
-      if (credentialsChanged) {
-        await invalidateUserSessions(req.sessionStore, id);
-      }
+      // Invalidate all active sessions for this user after any account change
+      await invalidateUserSessions(req.sessionStore, id);
 
       return res.json(updated);
     } catch (err) {

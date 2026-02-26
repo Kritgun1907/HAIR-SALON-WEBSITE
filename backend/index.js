@@ -92,11 +92,9 @@ const FRONTEND_URL = (
   process.env.FRONTEND_URL || "http://localhost:5173"
 ).replace(/\/+$/, "");
 
-/** Allowed CORS origins — includes custom domain, Vercel, and dev ports */
+/** Allowed CORS origins — includes common Vite dev ports */
 const ALLOWED_ORIGINS = [
   process.env.FRONTEND_URL || "http://localhost:5173",
-  "https://www.thexpertshair.com",
-  "https://thexpertshair.com",
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:5175",
@@ -104,7 +102,7 @@ const ALLOWED_ORIGINS = [
 
 /**
  * Check whether an origin is a Vercel preview/production URL.
- * Accepts any *.vercel.app origin — real security is handled by session auth.
+ * Accepts any *.vercel.app origin — real security is handled by JWT auth.
  */
 function isVercelOrigin(origin) {
   if (!origin) return false;
@@ -162,7 +160,7 @@ app.use(session({
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",   // Safe for same-origin; frontend proxies API via Vercel rewrites
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 8 * 60 * 60 * 1000, // 8 hours
   },
 }));
