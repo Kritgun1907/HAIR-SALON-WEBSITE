@@ -73,11 +73,18 @@ router.post(
       req.session.name = user.name;
       req.session.email = user.email;
 
-      return res.json({
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+      // Explicitly save session before responding (serverless may terminate early)
+      req.session.save((err) => {
+        if (err) {
+          console.error("[auth] Session save error:", err);
+          return res.status(500).json({ error: "Failed to create session" });
+        }
+        return res.json({
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        });
       });
     } catch (err) {
       console.error("[auth] Login error:", err);
@@ -94,7 +101,12 @@ router.post("/logout", (req, res) => {
       console.error("[auth] Session destroy error:", err);
       return res.status(500).json({ error: "Failed to sign out" });
     }
-    res.clearCookie("connect.sid");
+    res.clearCookie("connect.sid", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
     return res.json({ ok: true });
   });
 });
