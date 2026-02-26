@@ -45,7 +45,6 @@ interface ArtistRecord {
   commission: number;
   photo: string | null;
   userId: string | null;
-  loginActive?: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
