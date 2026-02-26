@@ -15,6 +15,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
+import * as XLSX from "xlsx";
 import {
   Receipt,
   Filter,
@@ -208,38 +209,43 @@ export default function PaymentHistory() {
     fetchHistory();
   }, [fetchHistory]);
 
-  // ── CSV Export ───────────────────────────────────────────────────────────
+  // ── Excel Export ─────────────────────────────────────────────────────────
   const handleExport = () => {
     if (!visits.length) return;
-    const headers = ["Date", "Client", "Contact", "Artist", "Services", "Subtotal", "Discount%", "Discount₹", "Total", "Method", "Cash", "Online", "Razorpay ID", "Status", "Filled By", "Created At"];
-    const rows = visits.map((v) => [
-      fmtDate(v.date),
-      v.name,
-      v.contact,
-      v.artist,
-      v.services.map((s) => `${s.name}(₹${s.price})`).join(" | "),
-      v.subtotal,
-      v.discountPercent,
-      v.discountAmount,
-      v.finalTotal,
-      v.paymentMethod,
-      v.cashAmount,
-      v.onlineAmount,
-      v.razorpayPaymentId || "",
-      v.paymentStatus,
-      v.filledBy,
-      fmtDateTime(v.createdAt),
-    ]);
-    const csv = [headers, ...rows]
-      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `payments_${from}_to_${to}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    const rows = visits.map((v) => ({
+      Date: fmtDate(v.date),
+      Client: v.name,
+      Contact: v.contact,
+      Artist: v.artist,
+      Services: v.services.map((s) => `${s.name} (₹${s.price})`).join(" | "),
+      "Subtotal (₹)": v.subtotal,
+      "Discount %": v.discountPercent,
+      "Discount (₹)": v.discountAmount,
+      "Total (₹)": v.finalTotal,
+      Method: v.paymentMethod,
+      "Cash (₹)": v.cashAmount,
+      "Online (₹)": v.onlineAmount,
+      "Razorpay ID": v.razorpayPaymentId || "",
+      Status: v.paymentStatus,
+      "Filled By": v.filledBy,
+      "Created At": fmtDateTime(v.createdAt),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+
+    // Auto-fit column widths
+    const colWidths = Object.keys(rows[0]).map((key) => ({
+      wch: Math.max(
+        key.length,
+        ...rows.map((r) => String((r as Record<string, unknown>)[key] ?? "").length)
+      ) + 2,
+    }));
+    worksheet["!cols"] = colWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Payment History");
+    XLSX.writeFile(workbook, `payments_${from}_to_${to}.xlsx`);
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -281,7 +287,7 @@ export default function PaymentHistory() {
           disabled={!visits.length}
           className="flex items-center gap-2 bg-stone-900 text-white text-sm rounded-xl px-5 py-2.5 hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all w-full sm:w-auto justify-center"
         >
-          <Download className="w-4 h-4" /> Export CSV
+          <Download className="w-4 h-4" /> Export Excel
         </button>
       </div>
 

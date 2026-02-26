@@ -22,7 +22,8 @@ interface AppLayoutProps {
 function dashboardPath(role: string) {
   if (role === "owner") return "/dashboard/owner";
   if (role === "manager") return "/dashboard/manager";
-  return "/visit-entry";
+  if (role === "receptionist") return "/dashboard/receptionist";
+  return "/";
 }
 
 /** Capitalise first letter */
@@ -62,7 +63,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { to: "/about", label: "About Us" },
     { to: "/contact", label: "Contact" },
   ];
-  if (user && (user.role === "manager" || user.role === "owner")) {
+  if (user && (user.role === "manager" || user.role === "owner" || user.role === "receptionist")) {
     navLinks.push({ to: dashboardPath(user.role), label: "Dashboard" });
   }
 

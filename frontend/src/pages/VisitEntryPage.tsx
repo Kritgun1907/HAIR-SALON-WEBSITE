@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { TimePicker, MaskedTimeInput } from "@/components/ui/time-picker";
+import { MaskedTimeInput } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 import AppLayout from "@/layouts/AppLayout";
 import { useVisitForm } from "@/hooks/useVisitForm";
@@ -234,11 +234,12 @@ export default function VisitEntryPage() {
               </Field>
 
               <Field label="End Time" required error={errors.endTime}>
-                {/* TimePicker (drum-roll): pre-filled with current system time.
-                    Staff just confirm or scroll to adjust. */}
-                <TimePicker
+                {/* MaskedTimeInput: same typed input as Start Time.
+                    Pre-filled with current system time on mount & reset. */}
+                <MaskedTimeInput
                   value={formData.endTime}
                   onChange={(v) => handleSelect("endTime")(v)}
+                  hasError={!!errors.endTime}
                 />
               </Field>
 
