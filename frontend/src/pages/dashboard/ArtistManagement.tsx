@@ -720,16 +720,13 @@ export default function ArtistManagement() {
               <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
                 Actions
               </th>
-              <th className="text-left px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Actions
-              </th>
             </tr>
           </thead>
           <tbody>
             {loadingArtists
               ? Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-b border-stone-100">
-                    {[1, 2, 3, 4, 5, 6].map((j) => (
+                    {[1, 2, 3, 4, 5].map((j) => (
                       <td key={j} className="px-6 py-4">
                         <div className="h-4 bg-stone-100 rounded animate-pulse" />
                       </td>
@@ -739,140 +736,145 @@ export default function ArtistManagement() {
               : artists.length === 0
                 ? (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="px-6 py-16 text-center text-stone-400 text-sm"
-                      >
-                          <div className="space-y-0.5">
-                            <div className="font-semibold text-stone-900">{a.name}</div>
-                            <div className="text-xs text-stone-500 break-all">
-                              {a.email || "No email"}
-                            </div>
-                          </div>
-                      className="group border-b border-stone-100 hover:bg-stone-50/50 transition-colors"
-                    >
-                      {/* Name with timestamps */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          {a.photo ? (
-                            <img
-                              src={resolvePhotoUrl(a.photo)!}
-                              alt={a.name}
-                              className="w-8 h-8 rounded-full object-cover border border-stone-200 shrink-0"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center uppercase shrink-0">
-                              {a.name.charAt(0)}
-                            </div>
-                          )}
-                          <p className="font-medium text-stone-900">{a.name}</p>
-                        </div>
-                        <div className="text-[11px] text-stone-500 mt-1 leading-snug opacity-0 max-h-0 overflow-hidden group-hover:opacity-100 group-hover:max-h-16 transition-all duration-200">
-                          <span className="block">
-                            Created: {new Date(a.createdAt).toLocaleString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: true,
-                            })}
-                          </span>
-                          <span className="block">
-                            Updated: {new Date(a.updatedAt).toLocaleString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: true,
-                            })}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Phone */}
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1.5 text-stone-600">
-                          <Phone className="w-3.5 h-3.5 text-stone-400" />
-                          {a.phone}
-                        </span>
-                      </td>
-
-                      {/* Commission */}
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                          {a.commission || 0}%
-                        </span>
-                      </td>
-
-                      {/* Status (login credential state) */}
-                      <td className="px-6 py-4">
-                        {a.userId ? (
-                          a.loginActive ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />{" "}
-                              Login active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />{" "}
-                              Login disabled
-                            </span>
-                          )
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-500 border border-stone-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />{" "}
-                            No login
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => navigate(`/dashboard/owner/artist-view/${a._id}`)}
-                            className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-300 rounded-lg px-3 py-1.5 transition-all"
-                            title="View artist dashboard"
-                          >
-                            <Eye className="w-3 h-3" /> Dashboard
-                          </button>
-
-                          <button
-                            onClick={() => setEditingArtist(a)}
-                            className="flex items-center gap-1.5 text-xs text-stone-600 hover:text-stone-900 border border-stone-200 hover:border-stone-300 rounded-lg px-3 py-1.5 transition-all"
-                          >
-                            <Pencil className="w-3 h-3" /> Edit
-                          </button>
-
-                          {a.isActive ? (
-                            <button
-                              onClick={() => handleDeactivate(a._id)}
-                              className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 border border-red-100 hover:border-red-200 rounded-lg px-3 py-1.5 transition-all"
-                            >
-                              <UserX className="w-3 h-3" /> Deactivate
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleReactivate(a._id)}
-                              className="flex items-center gap-1.5 text-xs text-green-600 hover:text-green-800 border border-green-100 hover:border-green-200 rounded-lg px-3 py-1.5 transition-all"
-                            >
-                              <UserCheck className="w-3 h-3" /> Reactivate
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => handlePermanentDelete(a)}
-                            className="flex items-center gap-1.5 text-xs text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded-lg px-3 py-1.5 transition-all"
-                            title="Permanently delete from database"
-                          >
-                            <Trash2 className="w-3 h-3" /> Delete
-                          </button>
-                        </div>
+                      <td colSpan={5} className="px-6 py-16 text-center text-stone-400 text-sm">
+                        No artists found. Add one to get started.
                       </td>
                     </tr>
-                  ))}
+                  )
+                : (
+                    artists.map((a) => (
+                      <tr
+                        key={a._id}
+                        className="group border-b border-stone-100 hover:bg-stone-50/50 transition-colors"
+                      >
+                        {/* Name + email with timestamps on hover */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            {a.photo ? (
+                              <img
+                                src={resolvePhotoUrl(a.photo)!}
+                                alt={a.name}
+                                className="w-8 h-8 rounded-full object-cover border border-stone-200 shrink-0"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center uppercase shrink-0">
+                                {a.name.charAt(0)}
+                              </div>
+                            )}
+                            <div className="space-y-0.5">
+                              <div className="font-semibold text-stone-900">{a.name}</div>
+                              <div className="text-xs text-stone-500 break-all">
+                                {a.email || "No email"}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-[11px] text-stone-500 mt-1 leading-snug opacity-0 max-h-0 overflow-hidden group-hover:opacity-100 group-hover:max-h-16 transition-all duration-200">
+                            <span className="block">
+                              Created: {new Date(a.createdAt).toLocaleString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              })}
+                            </span>
+                            <span className="block">
+                              Updated: {new Date(a.updatedAt).toLocaleString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              })}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Phone */}
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center gap-1.5 text-stone-600">
+                            <Phone className="w-3.5 h-3.5 text-stone-400" />
+                            {a.phone}
+                          </span>
+                        </td>
+
+                        {/* Commission */}
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            {a.commission || 0}%
+                          </span>
+                        </td>
+
+                        {/* Status (login credential state) */}
+                        <td className="px-6 py-4">
+                          {a.userId ? (
+                            a.loginActive ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />{" "}
+                                Login active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />{" "}
+                                Login disabled
+                              </span>
+                            )
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-500 border border-stone-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />{" "}
+                              No login
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => navigate(`/dashboard/owner/artist-view/${a._id}`)}
+                              className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-300 rounded-lg px-3 py-1.5 transition-all"
+                              title="View artist dashboard"
+                            >
+                              <Eye className="w-3 h-3" /> Dashboard
+                            </button>
+
+                            <button
+                              onClick={() => setEditingArtist(a)}
+                              className="flex items-center gap-1.5 text-xs text-stone-600 hover:text-stone-900 border border-stone-200 hover:border-stone-300 rounded-lg px-3 py-1.5 transition-all"
+                            >
+                              <Pencil className="w-3 h-3" /> Edit
+                            </button>
+
+                            {a.isActive ? (
+                              <button
+                                onClick={() => handleDeactivate(a._id)}
+                                className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 border border-red-100 hover:border-red-200 rounded-lg px-3 py-1.5 transition-all"
+                              >
+                                <UserX className="w-3 h-3" /> Deactivate
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleReactivate(a._id)}
+                                className="flex items-center gap-1.5 text-xs text-green-600 hover:text-green-800 border border-green-100 hover:border-green-200 rounded-lg px-3 py-1.5 transition-all"
+                              >
+                                <UserCheck className="w-3 h-3" /> Reactivate
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => handlePermanentDelete(a)}
+                              className="flex items-center gap-1.5 text-xs text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded-lg px-3 py-1.5 transition-all"
+                              title="Permanently delete from database"
+                            >
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
           </tbody>
         </table>
       </div>
