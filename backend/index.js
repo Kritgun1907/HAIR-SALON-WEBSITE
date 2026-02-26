@@ -431,7 +431,6 @@ app.use("/api/visits", authenticate, require("./routes/visits"));
 // ─── Static Data ─────────────────────────────────────────────────────────────
 
 const Artist = require("./models/Artist");
-const Service = require("./models/Service");
 
 /**
  * GET /api/form-data
