@@ -12,7 +12,7 @@ const { body, validationResult } = require("express-validator");
 const connectDB = require("../db");
 const Visit = require("../models/Visit");
 const Service = require("../models/Service");
-const { authenticate, authorize, authorizePermission } = require("../middleware/authMiddleware");
+const { authenticate, authorizePermission } = require("../middleware/authMiddleware");
 const { PERMISSIONS } = require('../constants/permissions');
 
 const router = express.Router();
@@ -201,7 +201,7 @@ router.post("/", authorizePermission(PERMISSIONS.VISIT_CREATE), createRules, asy
 //   method      online|cash|partial (optional payment method filter)
 //   page        number      (default: 1)
 //   limit       number      (default: 50, max: 200)
-router.get("/history", authorize("receptionist", "manager", "owner", "artist"), authorizePermission(PERMISSIONS.PAYMENTS_VIEW), async (req, res) => {
+router.get("/history", authorizePermission(PERMISSIONS.PAYMENTS_VIEW), async (req, res) => {
   try {
     await connectDB();
 

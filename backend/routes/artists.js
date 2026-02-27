@@ -17,7 +17,7 @@ const { body, validationResult } = require("express-validator");
 const connectDB = require("../db");
 const Artist = require("../models/Artist");
 const User = require("../models/User");
-const { authorize, authorizePermission, evictPermissionCache } = require("../middleware/authMiddleware");
+const { authorizePermission, evictPermissionCache } = require("../middleware/authMiddleware");
 const { PERMISSIONS } = require('../constants/permissions');
 const validateId = require("../middleware/validateId");
 const { invalidateUserSessions } = require("../utils/sessionUtils");
@@ -47,9 +47,9 @@ router.get("/", async (_req, res) => {
   }
 });
 
-// ─── GET /all — List ALL artists (including inactive) — manager + owner ─────
+// ─── GET /all — List ALL artists (including inactive) ──────────────────────
 
-router.get("/all", authorize("receptionist", "manager", "owner"), authorizePermission(PERMISSIONS.ARTISTS_VIEW), async (_req, res) => {
+router.get("/all", authorizePermission(PERMISSIONS.ARTISTS_VIEW), async (_req, res) => {
   try {
     // Populate the linked User's permissions so the frontend can render the permission editor
     const artists = await Artist.find({}).populate("userId", "permissions").sort({ createdAt: -1 });
@@ -64,7 +64,6 @@ router.get("/all", authorize("receptionist", "manager", "owner"), authorizePermi
 
 router.post(
   "/",
-  authorize("receptionist", "manager", "owner"),
   authorizePermission(PERMISSIONS.ARTISTS_CRUD),
   [
     body("name").trim().notEmpty().withMessage("Name is required"),
@@ -155,7 +154,6 @@ router.post(
 router.patch(
   "/:id",
   validateId,
-  authorize("receptionist", "manager", "owner"),
   authorizePermission(PERMISSIONS.ARTISTS_CRUD),
   [
     body("name")
@@ -314,7 +312,7 @@ router.patch(
 
 // ─── DELETE /:id — Soft-delete an artist ────────────────────────────────────
 
-router.delete("/:id", validateId, authorize("receptionist", "manager", "owner"), authorizePermission(PERMISSIONS.ARTISTS_CRUD), async (req, res) => {
+router.delete("/:id", validateId, authorizePermission(PERMISSIONS.ARTISTS_CRUD), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -340,7 +338,7 @@ router.delete("/:id", validateId, authorize("receptionist", "manager", "owner"),
 
 // ─── DELETE /:id/permanent — Hard-delete an artist from DB ──────────────────
 
-router.delete("/:id/permanent", validateId, authorize("receptionist", "manager", "owner"), authorizePermission(PERMISSIONS.ARTISTS_CRUD), async (req, res) => {
+router.delete("/:id/permanent", validateId, authorizePermission(PERMISSIONS.ARTISTS_CRUD), async (req, res) => {
   try {
     const { id } = req.params;
 

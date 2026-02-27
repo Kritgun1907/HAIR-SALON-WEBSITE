@@ -18,7 +18,9 @@ const PERMISSIONS = Object.freeze({
 
 // Default permission sets assigned when a new account is created.
 // The owner bypasses PBAC entirely — its array is intentionally empty and unused.
-// The artist role has a fixed separate flow and is not part of PBAC.
+// Artists start with an empty array (no permissions by default); the owner can
+// grant any permission via the Artist directory editor, and PBAC enforces it
+// identically to any other role.
 const ROLE_DEFAULTS = {
   manager:      [
     'analytics.view',
@@ -33,7 +35,7 @@ const ROLE_DEFAULTS = {
     'payments.view',
     'visit.create',
   ],
-  artist:       [], // fixed flow — PBAC does not apply
+  artist:       [], // starts empty — owner grants permissions individually via Artist directory
   owner:        [], // bypasses PBAC — this array is intentionally unused
 };
 

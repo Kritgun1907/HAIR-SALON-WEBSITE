@@ -1,12 +1,19 @@
 /**
  * @file authMiddleware.js
- * @description Session-based authentication and role-based authorisation middleware.
+ * @description Session-based authentication and PBAC (permission-based) authorisation middleware.
  *
- * Usage in route mounting:
- *   const { authenticate, authorize } = require("./middleware/authMiddleware");
+ * Design principle: roles are ONLY used to set the initial permission array when
+ * an account is created (see ROLE_DEFAULTS in constants/permissions.js). After that,
+ * access to every route is controlled exclusively by authorizePermission(PERMISSION_KEY).
  *
- *   app.use("/api/admin", authenticate, authorize("owner"), adminRouter);
- *   app.use("/api/analytics", authenticate, authorize("manager", "owner"), analyticsRouter);
+ * The only exception is authorize("artist") on /api/artist-dashboard, which guards
+ * identity-scoped personal data (an artist reading their own stats) — there is no
+ * grantable permission key that maps to "access your own data".
+ *
+ * Usage:
+ *   authenticate             — verify session exists
+ *   authorizePermission(key) — check user.permissions includes the key (owner always passes)
+ *   authorize(...roles)      — RESERVED for identity-scope guards only (artist dashboard)
  */
 
 const User = require('../models/User');

@@ -424,9 +424,12 @@ app.get("/api/verify-payment", authenticate, async (req, res) => {
 });
 
 // ─── Auth & Admin Routes ─────────────────────────────────────────────────────
-
+// All route-level access is enforced by authorizePermission(PERMISSION) inside
+// each router — the mount-level authorize() role gate has been removed so that
+// any authenticated user whose permissions array contains the required key can
+// reach the handler, regardless of role.
 app.use("/api/auth", require("./routes/auth"));
-app.use("/api/admin", authenticate, authorize("receptionist", "manager", "owner"), require("./routes/admin"));
+app.use("/api/admin", authenticate, require("./routes/admin"));
 app.use("/api/artists", authenticate, require("./routes/artists"));
 app.use("/api/services", authenticate, require("./routes/services"));
 app.use("/api/visits", authenticate, require("./routes/visits"));
@@ -503,16 +506,19 @@ app.get("/api/health", async (_req, res) => {
 });
 
 // ─── Analytics Routes (mounted sub-router) ──────────────────────────────────
-// Role gate only prevents completely unknown roles; PBAC (authorizePermission)
-// on each individual route is the real enforcement — so artists granted
-// analytics.view must be included here or they'd be blocked before reaching it.
-app.use("/api/analytics", authenticate, authorize("receptionist", "manager", "owner", "artist"), require("./routes/analytics"));
+// No role gate — authorizePermission(PERMISSIONS.ANALYTICS_VIEW) on each route
+// is the sole enforcement. Any authenticated user with that permission can access.
+app.use("/api/analytics", authenticate, require("./routes/analytics"));
 
-// ─── Artist Dashboard Routes (artist-only) ──────────────────────────────────
+// ─── Artist Dashboard Routes ─────────────────────────────────────────────────
+// authorize("artist") is intentionally kept here: this endpoint serves an
+// artist's OWN personal data scoped to their session identity. There is no
+// grantable permission for "read your own stats" — it is inherent to the role.
 app.use("/api/artist-dashboard", authenticate, authorize("artist"), require("./routes/artistDashboard"));
 
 // ─── Owner-view of any artist's dashboard ────────────────────────────────────
-app.use("/api/owner/artist-dashboard", authenticate, authorize("receptionist", "manager", "owner"), require("./routes/ownerArtistDashboard"));
+// authorizePermission(PERMISSIONS.ARTIST_DASHBOARD_VIEW) enforced per-route inside.
+app.use("/api/owner/artist-dashboard", authenticate, require("./routes/ownerArtistDashboard"));
 
 // ─── Server / Vercel Export ──────────────────────────────────────────────────
 // When run locally (`node index.js`), start an HTTP server.

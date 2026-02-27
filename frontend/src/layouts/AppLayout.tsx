@@ -23,6 +23,7 @@ function dashboardPath(role: string) {
   if (role === "owner") return "/dashboard/owner";
   if (role === "manager") return "/dashboard/manager";
   if (role === "receptionist") return "/dashboard/receptionist";
+  if (role === "artist") return "/dashboard/artist";
   return "/";
 }
 
@@ -63,7 +64,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { to: "/about", label: "About Us" },
     { to: "/contact", label: "Contact" },
   ];
-  if (user && (user.role === "manager" || user.role === "owner" || user.role === "receptionist")) {
+  if (user && ["manager", "owner", "receptionist", "artist"].includes(user.role)) {
     navLinks.push({ to: dashboardPath(user.role), label: "Dashboard" });
   }
 

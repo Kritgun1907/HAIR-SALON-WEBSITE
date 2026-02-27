@@ -17,7 +17,7 @@ const express = require("express");
 const { body, validationResult } = require("express-validator");
 const connectDB = require("../db");
 const Service = require("../models/Service");
-const { authorize, authorizePermission } = require("../middleware/authMiddleware");
+const { authorizePermission } = require("../middleware/authMiddleware");
 const { PERMISSIONS } = require('../constants/permissions');
 const validateId = require("../middleware/validateId");
 
@@ -53,7 +53,7 @@ router.get("/", async (_req, res) => {
 
 // ─── GET /all — List ALL services (including inactive) — owner only ─────────
 
-router.get("/all", authorize("receptionist", "manager", "owner", "artist"), authorizePermission(PERMISSIONS.SERVICES_VIEW), async (_req, res) => {
+router.get("/all", authorizePermission(PERMISSIONS.SERVICES_VIEW), async (_req, res) => {
   try {
     const services = await Service.find({}).sort({ createdAt: -1 });
     return res.json(services);
@@ -82,7 +82,6 @@ router.get("/categories", authorizePermission(PERMISSIONS.SERVICES_VIEW), async 
 
 router.post(
   "/",
-  authorize("receptionist", "manager", "owner", "artist"),
   authorizePermission(PERMISSIONS.SERVICES_CRUD),
   [
     body("name").trim().notEmpty().withMessage("Service name is required"),
@@ -136,7 +135,6 @@ router.post(
 router.patch(
   "/:id",
   validateId,
-  authorize("receptionist", "manager", "owner", "artist"),
   authorizePermission(PERMISSIONS.SERVICES_CRUD),
   [
     body("name")
@@ -203,7 +201,7 @@ router.patch(
 
 // ─── DELETE /:id — Soft-delete a service — owner only ───────────────────────
 
-router.delete("/:id", validateId, authorize("receptionist", "manager", "owner", "artist"), authorizePermission(PERMISSIONS.SERVICES_CRUD), async (req, res) => {
+router.delete("/:id", validateId, authorizePermission(PERMISSIONS.SERVICES_CRUD), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -222,7 +220,7 @@ router.delete("/:id", validateId, authorize("receptionist", "manager", "owner", 
 
 // ─── DELETE /:id/permanent — Hard-delete a service from DB ──────────────────
 
-router.delete("/:id/permanent", validateId, authorize("receptionist", "manager", "owner", "artist"), authorizePermission(PERMISSIONS.SERVICES_CRUD), async (req, res) => {
+router.delete("/:id/permanent", validateId, authorizePermission(PERMISSIONS.SERVICES_CRUD), async (req, res) => {
   try {
     const { id } = req.params;
 
