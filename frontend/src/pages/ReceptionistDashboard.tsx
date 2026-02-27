@@ -30,9 +30,9 @@ import type { SidebarLink } from "@/layouts/DashboardLayout";
 const receptionistLinks: SidebarLink[] = [
   { to: "/dashboard/receptionist/payments", label: "Payment History", icon: Receipt, requiredPermission: "payments.view" },
   { to: "/dashboard/receptionist/analytics", label: "Analytics", icon: BarChart3, requiredPermission: "analytics.view" },
-  { to: "/dashboard/receptionist/services", label: "Services", icon: Scissors, requiredPermission: "services.view" },
-  { to: "/dashboard/receptionist/artists", label: "Artists", icon: Palette, requiredPermission: "artists.view" },
-  { to: "/dashboard/receptionist/team", label: "Team", icon: Users, requiredPermission: "team.view" },
+  { to: "/dashboard/receptionist/services", label: "Services", icon: Scissors, requiredPermission: ["services.view", "services.crud"] },
+  { to: "/dashboard/receptionist/artists", label: "Artists", icon: Palette, requiredPermission: ["artists.view", "artists.crud"] },
+  { to: "/dashboard/receptionist/team", label: "Team", icon: Users, requiredPermission: ["team.view", "team.manage"] },
   { to: "/visit-entry", label: "New Visit Entry", icon: CalendarPlus, requiredPermission: "visit.create" },
 ];
 
@@ -45,7 +45,13 @@ function DefaultRedirect() {
   for (const link of receptionistLinks) {
     // Skip external links (like /visit-entry)
     if (!link.to.startsWith("/dashboard/receptionist/")) continue;
-    if (!link.requiredPermission || isOwner || perms.includes(link.requiredPermission)) {
+    const rp = link.requiredPermission;
+    if (!rp || isOwner) {
+      const sub = link.to.replace("/dashboard/receptionist/", "");
+      return <Navigate to={sub} replace />;
+    }
+    const has = Array.isArray(rp) ? rp.some((p) => perms.includes(p)) : perms.includes(rp);
+    if (has) {
       const sub = link.to.replace("/dashboard/receptionist/", "");
       return <Navigate to={sub} replace />;
     }

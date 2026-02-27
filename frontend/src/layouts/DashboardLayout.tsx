@@ -21,7 +21,7 @@ export interface SidebarLink {
   to: string;
   label: string;
   icon: React.ElementType;
-  requiredPermission?: string; // PBAC — if present, link is hidden when user lacks permission
+  requiredPermission?: string | string[]; // PBAC — string = single key, string[] = any-of (OR)
 }
 
 interface DashboardLayoutProps {
@@ -46,7 +46,11 @@ export default function DashboardLayout({
   const visibleLinks = sidebarLinks.filter((link) => {
     if (!link.requiredPermission) return true;
     if (user?.role === "owner") return true;
-    return user?.permissions.includes(link.requiredPermission) ?? false;
+    const perms = user?.permissions ?? [];
+    if (Array.isArray(link.requiredPermission)) {
+      return link.requiredPermission.some((p) => perms.includes(p));
+    }
+    return perms.includes(link.requiredPermission);
   });
 
   const handleSignOut = async () => {
