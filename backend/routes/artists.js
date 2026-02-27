@@ -99,20 +99,28 @@ router.post(
           .json({ error: "An artist with this phone number already exists" });
       }
 
+      // Normalize email once for all checks below
+      const emailLower = req.body.email ? req.body.email.toLowerCase().trim() : null;
+
+      // If an email is provided, enforce uniqueness across BOTH collections
+      // regardless of whether a login is being created (password may be added later).
+      if (emailLower) {
+        const [dupArtist, dupUser] = await Promise.all([
+          Artist.findOne({ email: emailLower }),
+          User.findOne({ email: emailLower }),
+        ]);
+        if (dupArtist) {
+          return res.status(409).json({ error: "An artist with this email already exists" });
+        }
+        if (dupUser) {
+          return res.status(409).json({ error: "This email is already used by a team member account" });
+        }
+      }
+
       let userId = null;
 
       // If email + password provided, create a linked User account (role: "artist")
-      if (req.body.email && req.body.password) {
-        const emailLower = req.body.email.toLowerCase().trim();
-
-        // Check if a user with this email already exists
-        const existingUser = await User.findOne({ email: emailLower });
-        if (existingUser) {
-          return res
-            .status(409)
-            .json({ error: "A user with this email already exists" });
-        }
-
+      if (emailLower && req.body.password) {
         const passwordHash = await bcrypt.hash(req.body.password, 12);
         const user = await User.create({
           name: req.body.name.trim(),
@@ -127,7 +135,7 @@ router.post(
       const artist = await Artist.create({
         name: req.body.name.trim(),
         phone: req.body.phone.trim(),
-        email: req.body.email ? req.body.email.toLowerCase().trim() : null,
+        email: emailLower,
         registrationId: req.body.registrationId?.trim() || null,
         commission: Number(req.body.commission) || 0,
         userId,
@@ -208,6 +216,25 @@ router.patch(
             ? req.body.email.toLowerCase().trim()
             : null
           : undefined;
+
+      // If email is being set to a new non-null value, enforce uniqueness across
+      // both Artist and User collections before applying any updates.
+      if (incomingEmail) {
+        const [dupArtist, dupUser] = await Promise.all([
+          // Exclude this artist from the Artist check
+          Artist.findOne({ email: incomingEmail, _id: { $ne: id } }),
+          // Exclude the artist's own linked login (they share email by design);
+          // when artist.userId is null, $ne: null matches all users → full check.
+          User.findOne({ email: incomingEmail, _id: { $ne: artist.userId ?? null } }),
+        ]);
+        if (dupArtist) {
+          return res.status(409).json({ error: "Another artist already has this email" });
+        }
+        if (dupUser) {
+          return res.status(409).json({ error: "This email is already used by a team member account" });
+        }
+      }
+
       if (incomingEmail !== undefined) updateObj.email = incomingEmail;
       if (req.body.registrationId !== undefined) updateObj.registrationId = req.body.registrationId?.trim() || null;
       if (req.body.commission !== undefined) updateObj.commission = Number(req.body.commission);

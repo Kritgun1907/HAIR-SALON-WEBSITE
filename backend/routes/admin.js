@@ -16,6 +16,7 @@ const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
 const connectDB = require("../db");
 const User = require("../models/User");
+const Artist = require("../models/Artist");
 const validateId = require("../middleware/validateId");
 const { invalidateUserSessions } = require("../utils/sessionUtils");
 const { PERMISSIONS, ROLE_DEFAULTS, PERMISSION_LABELS, PERMISSION_GROUPS } = require('../constants/permissions');
@@ -78,21 +79,30 @@ router.post(
     }
 
     try {
-      // Check duplicate email
-      const existing = await User.findOne({
-        email: req.body.email.toLowerCase(),
-      });
-      if (existing) {
+      const emailLower = req.body.email.toLowerCase().trim();
+
+      // Enforce email uniqueness across both collections so a team-member email
+      // can never clash with an existing artist contact/login email.
+      const [existingUser, existingArtist] = await Promise.all([
+        User.findOne({ email: emailLower }),
+        Artist.findOne({ email: emailLower }),
+      ]);
+      if (existingUser) {
         return res
           .status(409)
           .json({ error: "A user with this email already exists" });
+      }
+      if (existingArtist) {
+        return res
+          .status(409)
+          .json({ error: "This email is already used by an artist account" });
       }
 
       const passwordHash = await bcrypt.hash(req.body.password, 12);
 
       const user = await User.create({
         name: req.body.name.trim(),
-        email: req.body.email.toLowerCase().trim(),
+        email: emailLower,
         passwordHash,
         role: req.body.role,
         createdBy: req.session.userId,
@@ -169,10 +179,16 @@ router.patch(
       if (req.body.name !== undefined) updateObj.name = req.body.name.trim();
       if (req.body.email !== undefined) {
         const newEmail = req.body.email.toLowerCase().trim();
-        // Check duplicate email (excluding self)
-        const dup = await User.findOne({ email: newEmail, _id: { $ne: id } });
-        if (dup) {
+        // Check duplicate email in User collection (excluding self)
+        const dupUser = await User.findOne({ email: newEmail, _id: { $ne: id } });
+        if (dupUser) {
           return res.status(409).json({ error: "A user with this email already exists" });
+        }
+        // Check against Artist collection — exclude any artist already linked
+        // to THIS user account (they intentionally share the same email).
+        const dupArtist = await Artist.findOne({ email: newEmail, userId: { $ne: id } });
+        if (dupArtist) {
+          return res.status(409).json({ error: "This email is already used by an artist account" });
         }
         updateObj.email = newEmail;
       }
