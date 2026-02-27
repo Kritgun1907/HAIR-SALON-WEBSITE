@@ -41,7 +41,8 @@ interface ArtistRecord {
   registrationId: string | null;
   commission: number;
   photo: string | null;
-  userId: string | null;
+  /** Populated from linked User: null when no login account, object when one exists */
+  userId: { _id: string; permissions: string[] } | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -95,6 +96,20 @@ export default function ArtistManagement() {
   });
   const [editFormError, setEditFormError] = useState("");
 
+  // Permission editor (for artists with a linked login account)
+  const [permissionRegistry, setPermissionRegistry] = useState<{
+    permissions: string[];
+    labels: Record<string, string>;
+    groups: Array<{ label: string; keys: string[] }>;
+  } | null>(null);
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+
+  const togglePermission = (key: string) => {
+    setSelectedPermissions((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  };
+
   // ── Fetch artists (all, including inactive) ────────────────────────────────
   const fetchArtists = async () => {
     setLoadingArtists(true);
@@ -115,6 +130,11 @@ export default function ArtistManagement() {
 
   useEffect(() => {
     fetchArtists();
+    // Fetch permission registry for the artist permission editor
+    fetch(`${API}/api/admin/permissions`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => setPermissionRegistry(data))
+      .catch((err) => console.error("Failed to fetch permission registry:", err));
   }, []);
 
   // Sync edit form when editingArtist changes
@@ -129,6 +149,8 @@ export default function ArtistManagement() {
         commission: editingArtist.commission?.toString() || "0",
       });
       setEditFormError("");
+      // Pre-fill permissions from the linked User account (null → empty array)
+      setSelectedPermissions(editingArtist.userId?.permissions ?? []);
     }
   }, [editingArtist]);
 
@@ -244,6 +266,8 @@ export default function ArtistManagement() {
         email: editForm.email || null,
       };
       if (editForm.password) body.password = editForm.password;
+      // Always send permissions so the linked User account stays in sync
+      body.permissions = selectedPermissions;
 
       const res = await fetch(`${API}/api/artists/${editingArtist._id}`, {
         method: "PATCH",
@@ -807,6 +831,43 @@ export default function ArtistManagement() {
                     </div>
                   </div>
                 </div>
+
+                {/* Permission editor — only shown when artist has a login account */}
+                {editingArtist?.userId && permissionRegistry && (
+                  <div className="border-t border-stone-100 pt-4">
+                    <h4 className="text-xs font-semibold text-stone-600 uppercase tracking-wider mb-1.5">
+                      Feature Permissions
+                    </h4>
+                    <p className="text-xs text-stone-400 mb-4">
+                      Controls what this artist can access when logged in to their dashboard.
+                    </p>
+                    {permissionRegistry.groups.map((group) => (
+                      <div key={group.label} className="mb-4">
+                        <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">
+                          {group.label}
+                        </p>
+                        <div className="space-y-2">
+                          {group.keys.map((key) => (
+                            <label
+                              key={key}
+                              className="flex items-center gap-3 cursor-pointer hover:bg-stone-50 rounded-md p-1.5 transition-colors"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedPermissions.includes(key)}
+                                onChange={() => togglePermission(key)}
+                                className="w-4 h-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500"
+                              />
+                              <span className="text-sm text-stone-700">
+                                {permissionRegistry.labels[key] ?? key}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {editFormError && (
                   <p className="text-sm text-red-500">{editFormError}</p>

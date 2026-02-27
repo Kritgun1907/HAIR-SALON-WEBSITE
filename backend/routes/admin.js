@@ -49,7 +49,8 @@ router.get("/permissions", (req, res) => {
 
 router.get("/users", authorizePermission(PERMISSIONS.TEAM_VIEW), async (_req, res) => {
   try {
-    const users = await User.find({}, "-passwordHash").sort({ createdAt: -1 });
+    // Exclude artist-role accounts — they are managed through the Artist directory
+    const users = await User.find({ role: { $ne: "artist" } }, "-passwordHash").sort({ createdAt: -1 });
     return res.json(users);
   } catch (err) {
     console.error("[admin] List users error:", err);
@@ -157,6 +158,11 @@ router.patch(
         return res.status(404).json({ error: "User not found" });
       }
 
+      // Prevent editing artist-role users through this route (use /api/artists instead)
+      if (user.role === "artist") {
+        return res.status(403).json({ error: "Artist accounts must be managed through the Artist directory" });
+      }
+
       // Prevent owner from changing their own role
       if (id === req.session.userId && req.body.role) {
         return res
@@ -229,6 +235,11 @@ router.delete("/users/:id", validateId, authorizePermission(PERMISSIONS.TEAM_MAN
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Prevent touching artist accounts through this route
+    if (user.role === "artist") {
+      return res.status(403).json({ error: "Artist accounts must be managed through the Artist directory" });
+    }
+
     // Prevent self-deletion
     if (id === req.session.userId) {
       return res
@@ -258,6 +269,11 @@ router.delete("/users/:id/permanent", validateId, authorizePermission(PERMISSION
     const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+
+    // Prevent touching artist accounts through this route
+    if (user.role === "artist") {
+      return res.status(403).json({ error: "Artist accounts must be managed through the Artist directory" });
     }
 
     // Prevent self-deletion

@@ -17,7 +17,7 @@ const { body, validationResult } = require("express-validator");
 const connectDB = require("../db");
 const Artist = require("../models/Artist");
 const User = require("../models/User");
-const { authorize, authorizePermission } = require("../middleware/authMiddleware");
+const { authorize, authorizePermission, evictPermissionCache } = require("../middleware/authMiddleware");
 const { PERMISSIONS } = require('../constants/permissions');
 const validateId = require("../middleware/validateId");
 const { invalidateUserSessions } = require("../utils/sessionUtils");
@@ -51,7 +51,8 @@ router.get("/", async (_req, res) => {
 
 router.get("/all", authorize("receptionist", "manager", "owner"), authorizePermission(PERMISSIONS.ARTISTS_VIEW), async (_req, res) => {
   try {
-    const artists = await Artist.find({}).sort({ createdAt: -1 });
+    // Populate the linked User's permissions so the frontend can render the permission editor
+    const artists = await Artist.find({}).populate("userId", "permissions").sort({ createdAt: -1 });
     return res.json(artists);
   } catch (err) {
     console.error("[artists] List all error:", err);
@@ -178,6 +179,7 @@ router.patch(
       .optional({ values: "falsy" })
       .isLength({ min: 8 })
       .withMessage("Password must be at least 8 characters"),
+    body("permissions").optional().isArray().withMessage("permissions must be an array"),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -291,7 +293,18 @@ router.patch(
         await invalidateUserSessions(req.sessionStore, (artist.userId || updateObj.userId).toString());
       }
 
-      return res.json(updated);
+      // Update permissions on the linked User account if provided
+      const linkedUserId = updateObj.userId ?? artist.userId;
+      if (req.body.permissions !== undefined && linkedUserId) {
+        const validKeys = Object.values(PERMISSIONS);
+        const validPerms = req.body.permissions.filter(k => validKeys.includes(k));
+        await User.findByIdAndUpdate(linkedUserId, { permissions: validPerms });
+        evictPermissionCache(linkedUserId.toString());
+      }
+
+      // Re-fetch with populated userId so response matches GET /all shape
+      const populated = await Artist.findById(updated._id).populate("userId", "permissions");
+      return res.json(populated);
     } catch (err) {
       console.error("[artists] Update error:", err);
       return res.status(500).json({ error: "Failed to update artist" });

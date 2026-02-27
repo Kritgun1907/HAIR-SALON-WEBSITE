@@ -32,7 +32,7 @@ interface UserRecord {
   _id: string;
   name: string;
   email: string;
-  role: "receptionist" | "manager" | "owner";
+  role: "receptionist" | "manager" | "owner" | "artist";
   isActive: boolean;
   permissions: string[];
   createdAt: string;
@@ -121,7 +121,8 @@ export default function TeamManagement() {
       setEditForm({
         name: editingUser.name,
         email: editingUser.email,
-        role: editingUser.role,
+        // Artists are filtered server-side; cast is safe here
+        role: editingUser.role as "receptionist" | "manager" | "owner",
         newPassword: "",
       });
       setSelectedPermissions(editingUser.permissions ?? []);
